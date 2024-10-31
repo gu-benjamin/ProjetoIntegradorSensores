@@ -39,6 +39,7 @@ def msg_sensor(client, userdata, msg):
             co2 = mqtt_dados.get('co2')
             poeira = 0
             tempo_registro = mqtt_dados.get('timestamp')
+            regiao = 'Grande ABC'
             
             if tempo_registro is None:
                 print("Timestamp não encontrado")
@@ -58,7 +59,8 @@ def msg_sensor(client, userdata, msg):
                 umidade = umidade,
                 co2 = co2,
                 poeira = poeira,
-                tempo_registro = tempo_oficial
+                tempo_registro = tempo_oficial,
+                regiao = regiao
             )
             
             # Adicionar novo registro ao banco.
@@ -88,6 +90,7 @@ class Registro(mybd.Model):
     co2 = mybd.Column(mybd.Numeric(10, 2))
     poeira = mybd.Column(mybd.Numeric(10, 2))
     tempo_registro = mybd.Column(mybd.DateTime)
+    regiao = mybd.Column(mybd.String(100))
     
 
 # Seleciona todos os registros
@@ -143,7 +146,8 @@ def to_json(self):
         'co2': float(self.co2),
         'poeira': float(self.poeira),
         'tempo_registro': self.tempo_registro.strftime('%Y-%m-%d %H:%M:%S') 
-        if self.tempo_registro else None
+        if self.tempo_registro else None,
+        'regiao': self.regiao
         
     }
     
@@ -163,6 +167,7 @@ def criar_dados():
         co2 = dados.get('co2')  
         poeira = dados.get('poeira')  
         timestamp_unix = dados.get('tempo_registro')
+        regiao = dados.get('regiao')
         
         try:
             tempo_oficial = datetime.fromtimestamp(int(timestamp_unix), tz=timezone.utc)
@@ -177,7 +182,8 @@ def criar_dados():
             umidade=umidade,
             co2=co2,
             poeira=poeira,
-            tempo_registro=tempo_oficial
+            tempo_registro=tempo_oficial,
+            regiao = regiao
         )
         
         mybd.session.add(novo_registro)

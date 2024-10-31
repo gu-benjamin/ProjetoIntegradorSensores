@@ -21,13 +21,13 @@ st.sidebar.header('Selecione a informação para gerar o gráfico')
 # Select box -> cria uma caixa de seleção na barra lateral
 colunaX = st.sidebar.selectbox(
     'Eixo X',
-    options=['umidade','temperatura', 'pressao', 'altitude', 'co2', 'poeira'],
+    options=['umidade','temperatura', 'pressao', 'altitude', 'co2', 'poeira', 'regiao'],
     index=0
 )
 
 colunaY = st.sidebar.selectbox(
     'Eixo Y',
-    options=['umidade','temperatura', 'pressao', 'altitude', 'co2', 'poeira'],
+    options=['umidade','temperatura', 'pressao', 'altitude', 'co2', 'poeira', 'regiao'],
     index=1
 )
 
@@ -194,7 +194,7 @@ def Home():
 def graficos():
     st.title('Dashboard Monitoramento')
     
-    aba1, aba2 = st.tabs(['Gráfico de Linha', 'Gráfico de Dispersão'])
+    aba1, aba2 = st.tabs(['Gráfico de Linha', 'Gráfico de Barras Agrupado'])
     # aba1 = st.tabs(['Gráfico de Linha'])
     
     with aba1:
@@ -223,5 +223,47 @@ def graficos():
         except Exception as e:
             st.error(f'Erro ao criar gráfico de linha: {e}')
             
+    with aba2:
+        if df_selecionado.empty:
+            st.write('Nenhum dado está disponível para gerar o gráfico')
+            return
+        
+        if colunaX == colunaY:
+            st.warning('Selecione uma opção diferente para os eixos X e Y')
+            return
+        
+        try:
+            dados2 = df_selecionado
+            fig_barra = px.bar(dados2, 
+                               x=colunaX,
+                               y=colunaY,
+                               color='regiao',
+                               barmode='group',
+                               title='Comparação entre regiões'
+                               )
+            
+            st.plotly_chart(fig_barra, use_container_width=True)
+            
+        except Exception as e:
+            print(f'Erro ao criar o gráfico: {e}')
+
+
+def mapa():
+    st.title('Mapa de emissão de CO2')
+    
+    dados_mapa = pd.DataFrame(
+    {
+        "col1": np.random.randn(3) / 50 + -23.5489,
+        "col2": np.random.randn(3) / 50 + -46.6388,
+        "col3": np.random.randn(3) * 100,
+        "col4": ['#0083b8', '#cc9b2f', '#00821a'],
+    }
+)
+    
+
+    st.map(dados_mapa, latitude="col1", longitude="col2", size="col3", color="col4")
+    
+       
 Home()
 graficos()
+mapa()
