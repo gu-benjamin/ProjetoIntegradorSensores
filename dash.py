@@ -5,6 +5,8 @@ import plotly.express as px
 from query import *
 from datetime import datetime
 
+#from Projeto_Integrador.Projeto_Integrador_Completo.query import conexao
+
 query = "SELECT * FROM tb_registro"  # Consulta com o banco de dados.
 
 df = conexao(query)                  # Carregar os dados do MySQL.
@@ -19,14 +21,14 @@ st.sidebar.header("Selecione a informação para gerar o gráfico")
 # Seleção da coluna X  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
 colunaX = st.sidebar.selectbox(
     "Eixo X",
-    options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro", "regiao"],
+    options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro"],
     index = 0
 )
 
 # Seleção da coluna Y  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
 colunaY = st.sidebar.selectbox(
     "Eixo Y",
-    options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro", "regiao"],
+    options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro"],
     index = 1
 )
 
@@ -109,21 +111,16 @@ if filtros("tempo_registro"):
         value=(min_timestamp, max_timestamp),  # Faixa de Valores selecionado.
         format="DD-MM-YY - hh:mm"  # Formato de exibição (não vai afetar a seleção)
     )
-# Região
-if filtros("regiao"):
-    regiao_range = st.sidebar.slider(
-        "regiao",
-        min_value = (df["regiao"].min()),  # Valor Mínimo.
-        max_value = (df["regiao"].max()),  # Valor Máximo.
-        value = ((df["regiao"].min()), (df["regiao"].max())),  # Faixa de Valores selecionado.
-        step = 0.1   # Incremento para cada movimento do slider. 
-    )
-
-
 
     # Converter o range de volta para datetime
     tempo_registro_range = (pd.to_datetime(tempo_registro_range[0], unit='s'),
                             pd.to_datetime(tempo_registro_range[1], unit='s'))
+# Região
+if filtros("Regiao"):
+    Regiao_range = st.sidebar.slider(
+        "regiao",
+        step = 0.1   # Incremento para cada movimento do slider. 
+    )
 
 df_selecionado = df.copy()   # Cria uma copia do df original.:
 
@@ -170,10 +167,10 @@ if filtros("tempo_registro"):
         (df_selecionado["tempo_registro"] <= tempo_registro_range[1])
     ] 
     
-if filtros("regiao"):
+if filtros("Regiao"):
     df_selecionado = df_selecionado[
-        (df_selecionado["regiao"] >= regiao_range[0]) &
-        (df_selecionado["regiao"] <= regiao_range[1])
+        (df_selecionado["Regiao"] >= Regiao_range[0]) &
+        (df_selecionado["Regiao"] <= Regiao_range[1])
     ] 
 # **************************** GRÁFICOS ****************************
 
@@ -302,6 +299,11 @@ def graficos():
         except Exception as e:
             st.error(f"Erro ao criar gráfico de dispersão: {e}")
         
+st.sidebar.subheader("Região")
+SP = st.sidebar.checkbox("São Paulo")
+ABC = st.sidebar.checkbox("Grade ABC")
+
+
 # **************************** CHAMANDO A FUNÇÃO ****************************
 Home()
 graficos()
