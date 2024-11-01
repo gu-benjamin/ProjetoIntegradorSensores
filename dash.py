@@ -13,7 +13,7 @@ df = conexao(query)                  # Carregar os dados do MySQL.
 if st.button("Atualizar dados"):     # Botão para atualização dos dados.
     df = conexao(query)
 
-df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])  # Converter para datetime
+
 # ****************************** MENU LATERAL ******************************
 st.sidebar.header("Selecione a informação para gerar o gráfico")  
 
@@ -98,35 +98,37 @@ if filtros("poeira"):
         value = (float(df["poeira"].min()), float(df["poeira"].max())),  # Faixa de Valores selecionado.
         step = 0.1   # Incremento para cada movimento do slider. 
     )
-    
 
-# Tempo Registro
+
+## ************************************ FILTROS TEMPO_REGISTRO *************************************
 if filtros("tempo_registro"):
-    # Converter os valores mínimo e máximo para timestamp
-    
-    min_timestamp = df["tempo_registro"].min().timestamp()
-    max_timestamp = df["tempo_registro"].max().timestamp()
-    
-    tempo_registro_range = st.sidebar.slider(
-        "Tempo Registro",
-        min_value=min_timestamp,  # Valor Mínimo como timestamp.
-        max_value=max_timestamp,  # Valor Máximo como timestamp.
-        value=(min_timestamp, max_timestamp),  # Faixa de Valores selecionado.
-        format= "()"#('%Y-%m-%d %H:%M:%S')  # Formato de exibição (não vai afetar a seleção)
+    # Extrair as datas mínimas e máximas em formato de datetime
+    min_data = df["tempo_registro"].min()
+    max_data = df["tempo_registro"].max()
+
+    # Exibir dois campos de data para seleção de intervalo no sidebar
+    data_inicio = st.sidebar.date_input(
+        "Data de Início", 
+        min_data.date(), 
+        min_value=min_data.date(), 
+        max_value=max_data.date()
     )
-    # Converter o range de volta para datetime
-    tempo_registro_range = (pd.to_datetime(tempo_registro_range[0], unit='s'),
-                            pd.to_datetime(tempo_registro_range[1], unit='s'))
-# Região
-if filtros("regiao"):
-    regiao_range = st.sidebar.slider(
-        "regiao",
-        min_value = float(df["regiao"].min()),  # Valor Mínimo.
-        max_value = float(df["regiao"].max()),  # Valor Máximo.
-        value = (float(df["regiao"].min()), (df["regiao"].max())),  # Faixa de Valores selecionado.
-        step = 0.1   # Incremento para cada movimento do slider. 
+    
+    data_fim = st.sidebar.date_input(
+        "Data de Fim", 
+        max_data.date(), 
+        min_value=min_data.date(), 
+        max_value=max_data.date()
     )
 
+    # Converter as datas selecionadas para datetime, incluindo hora
+    tempo_registro_range = (
+        pd.to_datetime(data_inicio),
+        pd.to_datetime(data_fim) + pd.DateOffset(days=1) - pd.Timedelta(seconds=1)
+    )
+
+
+## *********************FIM  FILTROS TEMPO_REGISTRO *************************************
 # Seleção das regiões usando checkboxes
 st.sidebar.subheader("Região")
 SP = st.sidebar.checkbox("São Paulo")
@@ -182,11 +184,14 @@ if filtros("poeira"):
         (df_selecionado["poeira"] <= poeira_range[1])
     ] 
 
+
+# Filtrar os dados conforme o intervalo de data selecionado
 if filtros("tempo_registro"):
     df_selecionado = df_selecionado[
         (df_selecionado["tempo_registro"] >= tempo_registro_range[0]) &
         (df_selecionado["tempo_registro"] <= tempo_registro_range[1])
-    ] 
+    ]
+
     
 
     
