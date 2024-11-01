@@ -7,13 +7,10 @@ from datetime import datetime
 from streamlit_modal import Modal
 import google.generativeai as genai
 
-<<<<<<< Updated upstream
-=======
 GOOGLE_API_KEY= ('AIzaSyDzh2rQ_ukoLvgVakAbTgddbweV8uoePb8')
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
->>>>>>> Stashed changes
 query = "SELECT * FROM tb_registro"  # Consulta com o banco de dados.
 
 df = conexao(query)                  # Carregar os dados do MySQL.
@@ -263,11 +260,12 @@ def Home():
 def graficos():
     st.title("Dashboard Monitoramento")
        
-    aba1, aba2, aba3, aba4  = st.tabs(
+    aba1, aba2, aba3, aba4, aba5  = st.tabs(
         ["Gráfico de Barras",
         "Gráfico de Linhas",
         "Gráfico de Dispersão",
-        "Gráfico de Área"]
+        "Gráfico de Área",
+        "Gráfico de Barras Agrupado"]
         )
     
     with aba1:
@@ -352,8 +350,6 @@ def graficos():
         except Exception as e:
             st.error(f"Erro ao criar gráfico de dispersão: {e}")
         
-<<<<<<< Updated upstream
-=======
     with aba5:
         if df_selecionado.empty:
             st.write('Nenhum dado está disponível para gerar o gráfico')
@@ -378,7 +374,6 @@ def graficos():
             
         except Exception as e:
             print(f'Erro ao criar o gráfico: {e}')
->>>>>>> Stashed changes
 # **************************** CHAMANDO A FUNÇÃO ****************************
 Home()
 graficos()
