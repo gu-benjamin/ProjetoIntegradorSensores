@@ -5,7 +5,6 @@ import plotly.express as px
 from query import *
 from datetime import datetime
 
-from Projeto_Integrador.Projeto_Integrador_Completo.query import conexao
 
 query = "SELECT * FROM tb_registro"  # Consulta com o banco de dados.
 
@@ -32,6 +31,7 @@ colunaY = st.sidebar.selectbox(
     index = 1
 )
 
+# ****************************** FIM MENU LATERAL ******************************
 # Verificar quais os atributos do filtro. 
 def filtros(atributo):
     return atributo in [colunaX, colunaY]
@@ -98,9 +98,12 @@ if filtros("poeira"):
         value = (float(df["poeira"].min()), float(df["poeira"].max())),  # Faixa de Valores selecionado.
         step = 0.1   # Incremento para cada movimento do slider. 
     )
+    
+
 # Tempo Registro
 if filtros("tempo_registro"):
     # Converter os valores mínimo e máximo para timestamp
+    
     min_timestamp = df["tempo_registro"].min().timestamp()
     max_timestamp = df["tempo_registro"].max().timestamp()
     
@@ -109,7 +112,7 @@ if filtros("tempo_registro"):
         min_value=min_timestamp,  # Valor Mínimo como timestamp.
         max_value=max_timestamp,  # Valor Máximo como timestamp.
         value=(min_timestamp, max_timestamp),  # Faixa de Valores selecionado.
-        format="DD-MM-YY - hh:mm"  # Formato de exibição (não vai afetar a seleção)
+        format= "()"#('%Y-%m-%d %H:%M:%S')  # Formato de exibição (não vai afetar a seleção)
     )
     # Converter o range de volta para datetime
     tempo_registro_range = (pd.to_datetime(tempo_registro_range[0], unit='s'),
@@ -124,9 +127,24 @@ if filtros("regiao"):
         step = 0.1   # Incremento para cada movimento do slider. 
     )
 
+# Seleção das regiões usando checkboxes
+st.sidebar.subheader("Região")
+SP = st.sidebar.checkbox("São Paulo")
+ABC = st.sidebar.checkbox("Grande ABC")
 
+# Lista de regiões selecionadas
+regioes_selecionadas = []
+if SP:
+    regioes_selecionadas.append("São Paulo")
+if ABC:
+    regioes_selecionadas.append("Grande ABC")
+
+# Filtrando o DataFrame com base nas regiões selecionadas
+if regioes_selecionadas:
+    df = df[df["regiao"].isin(regioes_selecionadas)]
+
+    
 df_selecionado = df.copy()   # Cria uma copia do df original.:
-
 
 if filtros("umidade"):
     df_selecionado = df_selecionado[
@@ -215,7 +233,7 @@ def graficos():
         "Gráfico de Linhas",
         "Gráfico de Dispersão",
         "Gráfico de Área",
-        "Gráfico de ----"]
+        "Gráfico de Barras"]
         )
     
     with aba1:
@@ -282,7 +300,7 @@ def graficos():
             st.plotly_chart(fig_valores3, use_container_width=True)
             
         except Exception as e:
-            st.error(f"Erro ao criar gráfico de disperção: {e}")
+            st.error(f"Erro ao criar gráfico de dispersão: {e}")
     
     with aba4:
         if df_selecionado.empty:
@@ -323,6 +341,13 @@ def graficos():
             
         except Exception as e:
             print(f'Erro ao criar o gráfico: {e}')
+
+
 # **************************** CHAMANDO A FUNÇÃO ****************************
 Home()
-graficos()
+# Verifica se há dados após os filtros para os gráficos
+if not df_selecionado.empty:
+    # Gerar gráficos com base nos filtros aplicados
+    graficos()
+else:
+    st.warning("Nenhum dado encontrado para os filtros selecionados")
