@@ -4,15 +4,113 @@ import pandas as pd
 import plotly.express as px
 from query import *
 from datetime import datetime
+from streamlit_modal import Modal
+import google.generativeai as genai
+import mysql.connector
+from flask_sqlalchemy import SQLAlchemy
+from flask import Flask
+from sqlalchemy import text
 
-query = "SELECT * FROM tb_registro"  # Consulta com o banco de dados.
+app = Flask("registro")     # Nome do aplicativo.
 
-df = conexao(query)                  # Carregar os dados do MySQL.
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False    # Configura o SQLAlchemy para rastrear modificações. 
 
-if st.button("Atualizar dados"):     # Botão para atualização dos dados.
-    df = conexao(query)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:senai%40134@127.0.0.1/bd_medidor'
 
-df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])  # Converter para datetime
+mybd = SQLAlchemy(app)      # Cria uma instância do SQLAlchemy, passando a aplicação Flask como parâmetro. 
+
+GOOGLE_API_KEY= ('AIzaSyDzh2rQ_ukoLvgVakAbTgddbweV8uoePb8')
+genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+
+
+#*******************************************************************************
+# Função de conexão para consultar o banco de dados usando SQLAlchemy
+def conexao(query):
+    with app.app_context():  # Garante o contexto da aplicação para consultas ao banco
+        result = mybd.session.execute(text(query))  # Realiza a consulta
+        df = pd.DataFrame(result.fetchall(), columns=result.keys())  # Extrai e define os nomes das colunas
+        return df
+
+class TbMemoria(mybd.Model):
+    __tablename__ = 'tb_memoria'
+    id = mybd.Column(mybd.Integer, primary_key=True)
+    prompt = mybd.Column(mybd.String(255), nullable=False)
+    resposta_gemini = mybd.Column(mybd.Text, nullable=False)
+
+# Executa consultas iniciais e converte a coluna de tempo para datetime
+query = "SELECT * FROM tb_registro"
+memoria = ("SELECT * FROM tb_memoria")
+
+df = conexao(query)
+df_memoria = conexao(memoria)
+df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])  # Converte para datetime
+
+# Função para verificar memória
+def check_memory(prompt):
+    with app.app_context():  # Estabelece o contexto da aplicação
+        memoria = TbMemoria.query.filter_by(prompt=prompt).first()
+        return memoria.resposta_gemini if memoria else None
+
+# Função para salvar na memória
+def save_to_memory(prompt, response):
+    with app.app_context():  # Estabelece o contexto da aplicação
+        new_entry = TbMemoria(prompt=prompt, resposta_gemini=response)
+        mybd.session.add(new_entry)
+        mybd.session.commit()
+#*******************************************************************************
+
+
+# Configuração do modal
+modal = Modal(
+    "Análise Inteligente",
+    key="gemini-modal",
+    padding=40,
+    max_width=744
+)
+
+# Botão para abrir o modal
+open_modal = st.button("Análise inteligente", icon='🤖')
+if open_modal:
+    modal.open()
+
+# Configuração do conteúdo do modal
+if modal.is_open():
+    with modal.container():
+        st.write("Digite sua pergunta sobre a base de dados...")
+        user_input = st.text_area("Escreva algo aqui...", "")
+
+        # Geração de conteúdo ao clicar em "Enviar"
+        if st.button("Gerar análise"):
+            if user_input.strip():
+                try:
+                    prompt = model.generate_content(f'A partir desta base de dados, lembrando que os delimitadores das colunas são espaços, e faça a analise por linha: {df.to_string()} Compreenda essas informações e em seguida responda: {user_input}, não responder em forma de código.')
+                    
+                    # Verifica se o prompt já foi respondido e está na memória
+                    response_text = check_memory(prompt)
+                    if response_text:
+                            print("Resposta recuperada da memória:")
+                            print(response_text)
+                    else:
+                            # Gera uma nova resposta usando o modelo Gemini
+                            response = model.generate_content(prompt)
+                            response_text = response.text if hasattr(response, 'text') else "Erro: Resposta inválida do Gemini."
+
+                    # Armazena o novo prompt e resposta na memória
+                    save_to_memory(prompt, response_text)
+
+                    print("Resposta gerada pelo Gemini:")
+                    print(response_text)
+                    
+                except Exception as e:
+                    st.error(f"Ocorreu um erro ao acessar gerar resposta: {e}")
+            else:
+                st.warning("Por favor, insira uma pergunta válida.")
+        
+        if st.button('Fechar'):
+            modal.close()
+
 # ****************************** MENU LATERAL ******************************
 st.sidebar.header("Selecione a informação para gerar o gráfico")  
 
@@ -213,11 +311,12 @@ def Home():
 def graficos():
     st.title("Dashboard Monitoramento")
        
-    aba1, aba2, aba3, aba4  = st.tabs(
+    aba1, aba2, aba3, aba4, aba5  = st.tabs(
         ["Gráfico de Barras",
         "Gráfico de Linhas",
         "Gráfico de Dispersão",
-        "Gráfico de Área"]
+        "Gráfico de Área",
+        "Gráfico de Barras Agrupado"]
         )
     
     with aba1:
@@ -302,6 +401,30 @@ def graficos():
         except Exception as e:
             st.error(f"Erro ao criar gráfico de dispersão: {e}")
         
+    with aba5:
+        if df_selecionado.empty:
+            st.write('Nenhum dado está disponível para gerar o gráfico')
+            return
+        
+        if colunaX == colunaY:
+            st.warning('Selecione uma opção diferente para os eixos X e Y')
+            return
+        
+        try:
+            grupo_dados5 = df_selecionado
+            
+            fig_barra = px.bar(grupo_dados5, 
+                               x=colunaX,
+                               y=colunaY,
+                               color='regiao',
+                               barmode='group',
+                               title='Comparação entre regiões'
+                               )
+            
+            st.plotly_chart(fig_barra, use_container_width=True)
+            
+        except Exception as e:
+            print(f'Erro ao criar o gráfico: {e}')
 # **************************** CHAMANDO A FUNÇÃO ****************************
 Home()
 graficos()
