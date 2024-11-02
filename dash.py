@@ -15,11 +15,11 @@ app = Flask("registro")     # Nome do aplicativo.
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False    # Configura o SQLAlchemy para rastrear modificações. 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:senai%40134@127.0.0.1/bd_medidor'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:525748@127.0.0.1/bd_medidor'
 
 mybd = SQLAlchemy(app)      # Cria uma instância do SQLAlchemy, passando a aplicação Flask como parâmetro. 
 
-GOOGLE_API_KEY= ('AIzaSyDzh2rQ_ukoLvgVakAbTgddbweV8uoePb8')
+GOOGLE_API_KEY= ('AIzaSyBuq3bDGCnA95jVmawwQq8fpUGxd4-_66s')
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -46,12 +46,6 @@ memoria = ("SELECT * FROM tb_memoria")
 df = conexao(query)
 df_memoria = conexao(memoria)
 df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])  # Converte para datetime
-
-# Função para verificar memória
-def check_memory(prompt):
-    with app.app_context():  # Estabelece o contexto da aplicação
-        memoria = TbMemoria.query.filter_by(prompt=prompt).first()
-        return memoria.resposta_gemini if memoria else None
 
 # Função para salvar na memória
 def save_to_memory(prompt, response):
@@ -85,23 +79,27 @@ if modal.is_open():
         if st.button("Gerar análise"):
             if user_input.strip():
                 try:
-                    prompt = model.generate_content(f'A partir desta base de dados, lembrando que os delimitadores das colunas são espaços, e faça a analise por linha: {df.to_string()} Compreenda essas informações e em seguida responda: {user_input}, não responder em forma de código.')
+                    contexto = (f"Esse é o contexto inicial antes de cada prompt: Considere a seguinte base de dados: {df.to_string()}.Memória é a seguinte tabela: {df_memoria.to_string}. Não retorne esse texto nas respostas")
+                    prompt = (f"{contexto} Responda: {user_input}")
                     
-                    # Verifica se o prompt já foi respondido e está na memória
-                    response_text = check_memory(prompt)
-                    if response_text:
-                            print("Resposta recuperada da memória:")
-                            print(response_text)
-                    else:
-                            # Gera uma nova resposta usando o modelo Gemini
-                            response = model.generate_content(prompt)
-                            response_text = response.text if hasattr(response, 'text') else "Erro: Resposta inválida do Gemini."
-
+                    response = model.generate_content(prompt)
+                    
+                    if hasattr(response, 'text'):
+                        st.write("Resposta da análise:")
+                        st.write(response.text)
+                    # else:
+                    #     st.error("Resposta inválida recebida. Verifique o prompt ou a configuração do modelo.")
+                        
+                    # if response.candidates:  # Verifica se a resposta contém candidatos
+                    #     response_text = response.candidates[0].content.parts[0].text
+                    # else:
+                    #     response_text = "Erro: Resposta inválida do Gemini."
+                        
                     # Armazena o novo prompt e resposta na memória
-                    save_to_memory(prompt, response_text)
+                    save_to_memory(prompt, response)
 
                     print("Resposta gerada pelo Gemini:")
-                    print(response_text)
+                    print(response)
                     
                 except Exception as e:
                     st.error(f"Ocorreu um erro ao acessar gerar resposta: {e}")
