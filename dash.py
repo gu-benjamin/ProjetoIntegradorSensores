@@ -9,6 +9,7 @@ import google.generativeai as genai
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
 from sqlalchemy import text
+import requests
 
 app = Flask("registro") 
 
@@ -17,7 +18,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:525748@127.0.0.1/bd_medidor'
 
 mybd = SQLAlchemy(app)   
-   
+
 
 def conexao(query):
     with app.app_context():  
@@ -39,6 +40,10 @@ def save_to_memory(prompt, resposta_gemini):
         new_entry = TbMemoria(prompt=prompt, resposta_gemini=resposta_gemini)
         mybd.session.add(new_entry)
         mybd.session.commit()
+        
+def obter_dados_registro():
+    url = "http://localhost:5000/registro"
+    response = requests.get(url)
 #--------------------------------------------------------------------
 
 #Conexão com a API Gemini
