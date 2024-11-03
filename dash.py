@@ -6,56 +6,54 @@ from query import *
 from datetime import datetime
 from streamlit_modal import Modal
 import google.generativeai as genai
-import mysql.connector
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
 from sqlalchemy import text
 
-app = Flask("registro")     # Nome do aplicativo.
+app = Flask("registro") 
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False    # Configura o SQLAlchemy para rastrear modificações. 
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False   
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:525748@127.0.0.1/bd_medidor'
 
-mybd = SQLAlchemy(app)      # Cria uma instância do SQLAlchemy, passando a aplicação Flask como parâmetro. 
+mybd = SQLAlchemy(app)   
+   
 
-GOOGLE_API_KEY= ('AIzaSyBuq3bDGCnA95jVmawwQq8fpUGxd4-_66s')
-genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
-
-
-
-#*******************************************************************************
-# Função de conexão para consultar o banco de dados usando SQLAlchemy
 def conexao(query):
-    with app.app_context():  # Garante o contexto da aplicação para consultas ao banco
-        result = mybd.session.execute(text(query))  # Realiza a consulta
-        df = pd.DataFrame(result.fetchall(), columns=result.keys())  # Extrai e define os nomes das colunas
+    with app.app_context():  
+        result = mybd.session.execute(text(query))  
+        df = pd.DataFrame(result.fetchall(), columns=result.keys())
         return df
+
+# ------- Definição da classe para tb_memoria - Inserir na Main ------
 
 class TbMemoria(mybd.Model):
     __tablename__ = 'tb_memoria'
     id = mybd.Column(mybd.Integer, primary_key=True)
     prompt = mybd.Column(mybd.String(255), nullable=False)
     resposta_gemini = mybd.Column(mybd.Text, nullable=False)
+    
+# Função para salvar na memória
+def save_to_memory(prompt, resposta_gemini):
+    with app.app_context():
+        new_entry = TbMemoria(prompt=prompt, resposta_gemini=resposta_gemini)
+        mybd.session.add(new_entry)
+        mybd.session.commit()
+#--------------------------------------------------------------------
 
-# Executa consultas iniciais e converte a coluna de tempo para datetime
+#Conexão com a API Gemini
+GOOGLE_API_KEY= ('AIzaSyBuq3bDGCnA95jVmawwQq8fpUGxd4-_66s')
+genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+# Consultas iniciais nas duas tabelas do banco
 query = "SELECT * FROM tb_registro"
 memoria = ("SELECT * FROM tb_memoria")
 
 df = conexao(query)
 df_memoria = conexao(memoria)
 df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])  # Converte para datetime
-
-# Função para salvar na memória
-def save_to_memory(prompt, response):
-    with app.app_context():  # Estabelece o contexto da aplicação
-        new_entry = TbMemoria(prompt=prompt, resposta_gemini=response)
-        mybd.session.add(new_entry)
-        mybd.session.commit()
-#*******************************************************************************
-
-
+        
 # Configuração do modal
 modal = Modal(
     "Análise Inteligente",
@@ -79,27 +77,22 @@ if modal.is_open():
         if st.button("Gerar análise"):
             if user_input.strip():
                 try:
-                    contexto = (f"Esse é o contexto inicial antes de cada prompt: Considere a seguinte base de dados: {df.to_string()}.Memória é a seguinte tabela: {df_memoria.to_string}. Não retorne esse texto nas respostas")
+                    contexto = (f"Base de dados: {df.to_json()}. Memória: {df_memoria.to_json}. Não retorne esse texto nas respostas. Não responda com códigos")
+                    
                     prompt = (f"{contexto} Responda: {user_input}")
                     
-                    response = model.generate_content(prompt)
+                    resposta_gemini = model.generate_content(prompt)
                     
-                    if hasattr(response, 'text'):
+                    #Transforma a resposta em text
+                    if hasattr(resposta_gemini, 'text'):
                         st.write("Resposta da análise:")
-                        st.write(response.text)
-                    # else:
-                    #     st.error("Resposta inválida recebida. Verifique o prompt ou a configuração do modelo.")
-                        
-                    # if response.candidates:  # Verifica se a resposta contém candidatos
-                    #     response_text = response.candidates[0].content.parts[0].text
-                    # else:
-                    #     response_text = "Erro: Resposta inválida do Gemini."
-                        
+                        st.write(resposta_gemini.text)
+                              
                     # Armazena o novo prompt e resposta na memória
-                    save_to_memory(prompt, response)
+                    save_to_memory(prompt, resposta_gemini)
 
                     print("Resposta gerada pelo Gemini:")
-                    print(response)
+                    print(resposta_gemini)
                     
                 except Exception as e:
                     st.error(f"Ocorreu um erro ao acessar gerar resposta: {e}")
