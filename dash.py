@@ -167,28 +167,31 @@ if filtros("poeira"):
         value = (float(df["poeira"].min()), float(df["poeira"].max())),  # Faixa de Valores selecionado.
         step = 0.1   # Incremento para cada movimento do slider. 
     )
-# Tempo Registro
+## ************************************ FILTROS TEMPO_REGISTRO *************************************
 if filtros("tempo_registro"):
-    # Converter os valores mínimo e máximo para timestamp
-    min_timestamp = df["tempo_registro"].min().timestamp()
-    max_timestamp = df["tempo_registro"].max().timestamp()
+    # Extrair as datas mínimas e máximas em formato de datetime
+    min_data = df["tempo_registro"].min()
+    max_data = df["tempo_registro"].max()
+
+    # Exibir dois campos de data para seleção de intervalo no sidebar
+    data_inicio = st.sidebar.date_input(
+        "Data de Início", 
+        min_data.date(), 
+        min_value=min_data.date(), 
+        max_value=max_data.date()
+    )
     
-    tempo_registro_range = st.sidebar.slider(
-        "Tempo Registro",
-        min_value=min_timestamp,  # Valor Mínimo como timestamp.
-        max_value=max_timestamp,  # Valor Máximo como timestamp.
-        value=(min_timestamp, max_timestamp),  # Faixa de Valores selecionado.
-        format="DD-MM-YY - hh:mm"  # Formato de exibição (não vai afetar a seleção)
+    data_fim = st.sidebar.date_input(
+        "Data de Fim", 
+        max_data.date(), 
+        min_value=min_data.date(), 
+        max_value=max_data.date()
     )
 
-    # Converter o range de volta para datetime
-    tempo_registro_range = (pd.to_datetime(tempo_registro_range[0], unit='s'),
-                            pd.to_datetime(tempo_registro_range[1], unit='s'))
-# Região
-if filtros("Regiao"):
-    Regiao_range = st.sidebar.slider(
-        "regiao",
-        step = 0.1   # Incremento para cada movimento do slider. 
+    # Converter as datas selecionadas para datetime, incluindo hora
+    tempo_registro_range = (
+        pd.to_datetime(data_inicio),
+        pd.to_datetime(data_fim) + pd.DateOffset(days=1) - pd.Timedelta(seconds=1)
     )
 
 df_selecionado = df.copy()   # Cria uma copia do df original.:
