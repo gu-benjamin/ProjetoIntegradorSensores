@@ -4,6 +4,12 @@ import pandas as pd
 import plotly.express as px
 from query import *
 from datetime import datetime
+from streamlit_modal import Modal
+import google.generativeai as genai
+
+GOOGLE_API_KEY= ('AIzaSyDzh2rQ_ukoLvgVakAbTgddbweV8uoePb8')
+genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 #from Projeto_Integrador.Projeto_Integrador_Completo.query import conexao
 
@@ -11,10 +17,51 @@ query = "SELECT * FROM tb_registro"  # Consulta com o banco de dados.
 
 df = conexao(query)                  # Carregar os dados do MySQL.
 
+df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])  # Converter para datetime
+
 if st.button("Atualizar dados"):     # Botão para atualização dos dados.
     df = conexao(query)
 
-df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])  # Converter para datetime
+# Configuração do modal
+modal = Modal(
+    "Análise Inteligente",
+    key="gemini-modal",
+    padding=40,
+    max_width=744
+)
+
+# Botão para abrir o modal
+open_modal = st.button("Análise inteligente", icon='🤖')
+if open_modal:
+    modal.open()
+
+# Configuração do conteúdo do modal
+if modal.is_open():
+    with modal.container():
+        st.write("Digite sua pergunta sobre a base de dados...")
+        user_input = st.text_area("Escreva algo aqui...", "")
+
+        # Geração de conteúdo ao clicar em "Enviar"
+        if st.button("Gerar análise"):
+            if user_input.strip():
+                try:
+                    response = model.generate_content(f'A partir desta base de dados, lembrando que os delimitadores das colunas são espaços, e faça a analise por linha: {df.to_string()} Compreenda essas informações e em seguida responda: {user_input}, não responder em forma de código.')
+                    
+                    # Verifica se a resposta foi gerada corretamente
+                    if hasattr(response, 'text'):
+                        st.write("Resposta da análise:")
+                        st.write(response.text)
+                    else:
+                        st.error("Resposta inválida recebida. Verifique o prompt ou a configuração do modelo.")
+                        
+                except Exception as e:
+                    st.error(f"Ocorreu um erro ao acessar gerar resposta: {e}")
+            else:
+                st.warning("Por favor, insira uma pergunta válida.")
+        
+        if st.button('Fechar'):
+            modal.close()
+
 # ****************************** MENU LATERAL ******************************
 
 st.sidebar.image("images/logo.jpg", width=150)
@@ -231,11 +278,12 @@ def Home():
 def graficos():
     st.title("Dashboard Monitoramento")
        
-    aba1, aba2, aba3, aba4  = st.tabs(
+    aba1, aba2, aba3, aba4, aba5  = st.tabs(
         ["Gráfico de Barras",
         "Gráfico de Linhas",
         "Gráfico de Dispersão",
-        "Gráfico de Área"]
+        "Gráfico de Área",
+        "Gráfico de Barras Agrupado"]
         )
     
     with aba1:
@@ -319,7 +367,31 @@ def graficos():
 
         except Exception as e:
             st.error(f"Erro ao criar gráfico de dispersão: {e}")
-
+        
+    with aba5:
+        if df_selecionado.empty:
+            st.write('Nenhum dado está disponível para gerar o gráfico')
+            return
+        
+        if colunaX == colunaY:
+            st.warning('Selecione uma opção diferente para os eixos X e Y')
+            return
+        
+        try:
+            grupo_dados5 = df_selecionado
+            
+            fig_barra = px.bar(grupo_dados5, 
+                               x=colunaX,
+                               y=colunaY,
+                               color='regiao',
+                               barmode='group',
+                               title='Comparação entre regiões'
+                               )
+            
+            st.plotly_chart(fig_barra, use_container_width=True)
+            
+        except Exception as e:
+            print(f'Erro ao criar o gráfico: {e}')
 
 # **************************** CHAMANDO A FUNÇÃO ****************************
 Home()
