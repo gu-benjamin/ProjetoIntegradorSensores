@@ -11,6 +11,8 @@ GOOGLE_API_KEY= ('AIzaSyDzh2rQ_ukoLvgVakAbTgddbweV8uoePb8')
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
+#from Projeto_Integrador.Projeto_Integrador_Completo.query import conexao
+
 query = "SELECT * FROM tb_registro"  # Consulta com o banco de dados.
 
 df = conexao(query)                  # Carregar os dados do MySQL.
@@ -61,21 +63,43 @@ if modal.is_open():
             modal.close()
 
 # ****************************** MENU LATERAL ******************************
-st.sidebar.header("Selecione a informação para gerar o gráfico")  
+
+st.sidebar.image("images/logo.jpg", width=150)
+
+st.sidebar.markdown(f'<h1 style="text-transform: uppercase;">{'Selecione a informação para gerar o gráfico'}</h1>', unsafe_allow_html=True)  
 
 # Seleção da coluna X  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
 colunaX = st.sidebar.selectbox(
     "Eixo X",
-    options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro", "regiao"],
+    options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro"],
     index = 0
 )
 
 # Seleção da coluna Y  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
 colunaY = st.sidebar.selectbox(
     "Eixo Y",
-    options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro", "regiao"],
+    options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro"],
     index = 1
 )
+
+st.sidebar.subheader("Região")
+SP = st.sidebar.checkbox("São Paulo", value=True)
+ABC = st.sidebar.checkbox("Grade ABC", value=True)
+
+if SP == False and ABC == False:
+    st.sidebar.markdown(f'<p style="font-size:16px;font-weight:bold;background-color:#950606;display:flex;justify-content:center;padding:10px;border-radius:10px;">{"SELECIONE UMA REGIÃO!"}<p>', unsafe_allow_html=True)
+    #st.sidebar.warning("Selecione uma região!")
+
+# Lista de regiões selecionadas
+regioes_selecionadas = []
+if SP:
+    regioes_selecionadas.append("São Paulo")
+if ABC:
+    regioes_selecionadas.append("Grande ABC")
+
+# Filtrando o DataFrame com base nas regiões selecionadas
+if regioes_selecionadas:
+    df = df[df["regiao"].isin(regioes_selecionadas)]
 
 # Verificar quais os atributos do filtro. 
 def filtros(atributo):
@@ -156,24 +180,22 @@ if filtros("tempo_registro"):
         value=(min_timestamp, max_timestamp),  # Faixa de Valores selecionado.
         format="DD-MM-YY - hh:mm"  # Formato de exibição (não vai afetar a seleção)
     )
-# Região
-if filtros("regiao"):
-    regiao_range = st.sidebar.slider(
-        "regiao",
-        min_value = (df["regiao"].min()),  # Valor Mínimo.
-        max_value = (df["regiao"].max()),  # Valor Máximo.
-        value = ((df["regiao"].min()), (df["regiao"].max())),  # Faixa de Valores selecionado.
-        step = 0.1   # Incremento para cada movimento do slider. 
-    )
-
-
 
     # Converter o range de volta para datetime
     tempo_registro_range = (pd.to_datetime(tempo_registro_range[0], unit='s'),
                             pd.to_datetime(tempo_registro_range[1], unit='s'))
+# Região
+if filtros("Regiao"):
+    Regiao_range = st.sidebar.slider(
+        "regiao",
+        step = 0.1   # Incremento para cada movimento do slider. 
+    )
 
+# if SP == ABC == False:
+#     df_selecionado = df.empty
+# else:
 df_selecionado = df.copy()   # Cria uma copia do df original.:
-
+print(df_selecionado)
 
 if filtros("umidade"):
     df_selecionado = df_selecionado[
@@ -216,14 +238,10 @@ if filtros("tempo_registro"):
         (df_selecionado["tempo_registro"] >= tempo_registro_range[0]) &
         (df_selecionado["tempo_registro"] <= tempo_registro_range[1])
     ] 
-    
-if filtros("regiao"):
-    df_selecionado = df_selecionado[
-        (df_selecionado["regiao"] >= regiao_range[0]) &
-        (df_selecionado["regiao"] <= regiao_range[1])
-    ] 
-# **************************** GRÁFICOS ****************************
 
+
+# **************************** GRÁFICOS ****************************
+    
 def Home():
     with st.expander("Tabela"):
         mostrarDados = st.multiselect(
@@ -332,7 +350,7 @@ def graficos():
             st.plotly_chart(fig_valores3, use_container_width=True)
             
         except Exception as e:
-            st.error(f"Erro ao criar gráfico de disperção: {e}")
+            st.error(f"Erro ao criar gráfico de dispersão: {e}")
     
     with aba4:
         if df_selecionado.empty:
@@ -374,6 +392,10 @@ def graficos():
             
         except Exception as e:
             print(f'Erro ao criar o gráfico: {e}')
+
 # **************************** CHAMANDO A FUNÇÃO ****************************
 Home()
-graficos()
+if SP == ABC == False:
+    st.warning("Nenhum dado encontrado para os filtros selecionados!")
+else:
+    graficos()
