@@ -191,9 +191,6 @@ if filtros("Regiao"):
         step = 0.1   # Incremento para cada movimento do slider. 
     )
 
-# if SP == ABC == False:
-#     df_selecionado = df.empty
-# else:
 df_selecionado = df.copy()   # Cria uma copia do df original.:
 print(df_selecionado)
 
