@@ -13,7 +13,7 @@ app = Flask("registro")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False   
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:525748@127.0.0.1/bd_medidor'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:525748@127.0.0.1/bd_medidor' #A senha está diferente
 
 mybd = SQLAlchemy(app)   
    
@@ -23,13 +23,14 @@ def conexao(query):
         result = mybd.session.execute(text(query))  
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
         return df
+    
+# -------------------INICIO DA APLICAÇÃO GEMINI---------------------------------------------
 
-# ------- Definição da classe para tb_memoria - Inserir na Main ------
-
+# Classe da tabela memória
 class TbMemoria(mybd.Model):
     __tablename__ = 'tb_memoria'
     id = mybd.Column(mybd.Integer, primary_key=True)
-    prompt = mybd.Column(mybd.String(255), nullable=False)
+    prompt = mybd.Column(mybd.Text, nullable=False)
     resposta_gemini = mybd.Column(mybd.Text, nullable=False)
     
 # Função para salvar na memória
@@ -38,12 +39,23 @@ def save_to_memory(prompt, resposta_gemini):
         new_entry = TbMemoria(prompt=prompt, resposta_gemini=resposta_gemini)
         mybd.session.add(new_entry)
         mybd.session.commit()
+
+# Função para interagir com o Gemini
+def gerar_resposta_gemini(prompt):
+    contexto = (f"Base de dados: {df.to_json()}. Memória: {df_memoria.to_json}. Não retorne esse texto nas respostas. Não responda com códigos. {prompt}")
+    resposta_gemini = model.generate_content(contexto)
+    if hasattr(resposta_gemini, 'candidates') and resposta_gemini.candidates:
+        return resposta_gemini.candidates[0].content.parts[0].text
+    else:
+        return "Resposta inválida do modelo Gemini."    
 #--------------------------------------------------------------------
 
-#Conexão com a API Gemini
+#Conexão com a API Gemini e configuração do modelo
 GOOGLE_API_KEY= ('AIzaSyBuq3bDGCnA95jVmawwQq8fpUGxd4-_66s')
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel(
+    model_name='gemini-1.5-flash',
+    system_instruction='Assistente de dados ambientais com acesso a histórico de temperatura, umidade, CO₂, pressão, altitude, poeira e região.')
 
 # Consultas iniciais nas duas tabelas do banco
 query = "SELECT * FROM tb_registro"
@@ -76,16 +88,13 @@ if modal.is_open():
         if st.button("Gerar análise"):
             if user_input.strip():
                 try:
-                    contexto = (f"Base de dados: {df.to_json()}. Memória: {df_memoria.to_json}. Não retorne esse texto nas respostas. Não responda com códigos")
                     
-                    prompt = (f"{contexto} Responda: {user_input}")
+                    prompt = user_input
                     
-                    resposta_gemini = model.generate_content(prompt)
-                    
-                    #Transforma a resposta em text
-                    if hasattr(resposta_gemini, 'text'):
-                        st.write("Resposta da análise:")
-                        st.write(resposta_gemini.text)
+                    resposta_gemini = gerar_resposta_gemini(prompt)
+        
+                    st.write("Resposta da análise:")
+                    st.write(resposta_gemini) 
                               
                     # Armazena o novo prompt e resposta na memória
                     save_to_memory(prompt, resposta_gemini)
@@ -100,3 +109,5 @@ if modal.is_open():
         
         if st.button('Fechar'):
             modal.close()
+            
+# -------------------FIM DA APLICAÇÃO GEMINI ---------------------------------------------
