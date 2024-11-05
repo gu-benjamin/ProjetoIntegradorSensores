@@ -5,18 +5,13 @@ import plotly.express as px
 from query import *
 from datetime import datetime
 from streamlit_modal import Modal
-import google.generativeai as genai
 
+# Consultas iniciais nas duas tabelas do banco
+query = "SELECT * FROM tb_registro"
+memoria = ("SELECT * FROM tb_memoria")
 
-GOOGLE_API_KEY= ('AIzaSyDzh2rQ_ukoLvgVakAbTgddbweV8uoePb8')
-genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
-
-#from Projeto_Integrador.Projeto_Integrador_Completo.query import conexao
-
-query = "SELECT * FROM tb_registro"  # Consulta com o banco de dados.
-
-df = conexao(query)                  # Carregar os dados do MySQL.
+df = conexao(query)
+df_memoria = conexao(memoria)
 
 df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])  # Converter para datetime
 
@@ -46,15 +41,20 @@ if modal.is_open():
         if st.button("Gerar análise"):
             if user_input.strip():
                 try:
-                    response = model.generate_content(f'A partir desta base de dados, lembrando que os delimitadores das colunas são espaços, e faça a analise por linha: {df.to_string()} Compreenda essas informações e em seguida responda: {user_input}, não responder em forma de código.')
                     
-                    # Verifica se a resposta foi gerada corretamente
-                    if hasattr(response, 'text'):
-                        st.write("Resposta da análise:")
-                        st.write(response.text)
-                    else:
-                        st.error("Resposta inválida recebida. Verifique o prompt ou a configuração do modelo.")
-                        
+                    prompt = user_input
+                    
+                    resposta_gemini = gerar_resposta_gemini(df, df_memoria, prompt)
+                    
+                    st.write("Resposta da análise:")
+                    st.write(resposta_gemini) 
+                              
+                    # Armazena o novo prompt e resposta na memória
+                    save_to_memory(prompt, resposta_gemini)
+
+                    print("Resposta gerada pelo Gemini:")
+                    print(resposta_gemini)
+                    
                 except Exception as e:
                     st.error(f"Ocorreu um erro ao acessar gerar resposta: {e}")
             else:
@@ -62,6 +62,8 @@ if modal.is_open():
         
         if st.button('Fechar'):
             modal.close()
+            
+# -------------------FIM DA APLICAÇÃO GEMINI ---------------------------------------------
 
 # ****************************** MENU LATERAL ******************************
 
