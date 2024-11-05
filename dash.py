@@ -7,6 +7,7 @@ from datetime import datetime
 from streamlit_modal import Modal
 import google.generativeai as genai
 
+
 GOOGLE_API_KEY= ('AIzaSyDzh2rQ_ukoLvgVakAbTgddbweV8uoePb8')
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
@@ -178,14 +179,16 @@ if filtros("tempo_registro"):
         "Data de Início", 
         min_data.date(), 
         min_value=min_data.date(), 
-        max_value=max_data.date()
+        max_value=max_data.date(),
+        format= "DD-MM-YYYY"
     )
     
     data_fim = st.sidebar.date_input(
         "Data de Fim", 
         max_data.date(), 
         min_value=min_data.date(), 
-        max_value=max_data.date()
+        max_value=max_data.date(),
+        format= "DD-MM-YYYY"
     )
 
     # Converter as datas selecionadas para datetime, incluindo hora
@@ -195,7 +198,7 @@ if filtros("tempo_registro"):
     )
 
 df_selecionado = df.copy()   # Cria uma copia do df original.:
-print(df_selecionado)
+
 
 if filtros("umidade"):
     df_selecionado = df_selecionado[
