@@ -13,7 +13,7 @@ app = Flask("registro")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False   
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:525748@127.0.0.1/bd_medidor' #A senha está diferente
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:senai%40134@127.0.0.1/bd_medidor' 
 
 mybd = SQLAlchemy(app)   
    
@@ -42,7 +42,7 @@ def save_to_memory(prompt, resposta_gemini):
 
 # Função para interagir com o Gemini
 def gerar_resposta_gemini(prompt):
-    contexto = (f"Base de dados: {df.to_json()}. Memória: {df_memoria.to_json}. Não retorne esse texto nas respostas. Não responda com códigos. {prompt}")
+    contexto = (f"Base de dados: {df.to_json()}. Memória: {df_memoria.to_json()}. Não retorne esse texto nas respostas. Não responda com códigos. {prompt}")
     resposta_gemini = model.generate_content(contexto)
     if hasattr(resposta_gemini, 'candidates') and resposta_gemini.candidates:
         return resposta_gemini.candidates[0].content.parts[0].text
