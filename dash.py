@@ -15,7 +15,11 @@ st.set_page_config(
     initial_sidebar_state='expanded')
 
 # Consultas iniciais nas duas tabelas do banco
-query = "SELECT * FROM tb_registro"
+query = """
+    SELECT * 
+    FROM tb_registro
+    WHERE regiao IS NOT NULL 
+"""
 memoria = ("SELECT * FROM tb_memoria")
 
 df = conexao(query)
@@ -228,7 +232,7 @@ def graficos(df):
         grafico_dispersao(df)
         grafico_area(df)
 
-    grafico_barrasEmpilhadas(df)
+    grafico_barras_empilhadas(df)
 
 # **************************** CHAMANDO A FUNÇÃO ****************************
 

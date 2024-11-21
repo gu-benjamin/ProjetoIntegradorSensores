@@ -5,190 +5,287 @@ import plotly.express as px
 from query import *
 from datetime import datetime
 from streamlit_modal import Modal
+import scipy.stats as stats
+import plotly.graph_objects as go
 
 def grafico_barras(df_selecionado):
-    
     with st.expander("Selecione os eixos"): 
         colunaX = st.selectbox(
             "Eixo X",
-            options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira"],
-            index = 0,
-            key='eixox1'
+            options=["tempo_registro"],
+            index=0,
+            key='eixox_barras'
         )
-        
+
         colunaY = st.selectbox(
             "Eixo Y",
-            options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira"],
-            index = 1,
-            key='eixoy1'
+            options=["umidade", "temperatura", "pressao", "altitude", "co2", "poeira"],
+            index=1,
+            key='eixoy_barras'
         )
-    
+
     if colunaX == colunaY:
         st.warning("Selecione uma opção diferente para os eixos X e Y")
         return
-    
+
+    with st.expander("Configuração de intervalo"):
+        intervalo = st.selectbox(
+            "Escolha o intervalo para calcular a média",
+            options=["15T", "30T", "1H", "6H", "1D"],
+            index=2,
+            key="intervalo_barras"
+        )
+
     try:
-        cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}           
-        fig_valores = px.bar(
-            df_selecionado,      
-            x = colunaX,        
-            y = colunaY,
-            color = "regiao",
-            orientation = "v",  
-            title = f"Gráfico de Barras por Região: {colunaX.capitalize()} vs {colunaY.capitalize()}",
-            color_discrete_map = cores_personalizadas,        
-            template = "plotly_white"
-            )
-        
+        # Agrupar e calcular a média por intervalo
+        df_selecionado['tempo_registro'] = pd.to_datetime(df_selecionado['tempo_registro'])
+        df_selecionado['tempo_alinhado'] = df_selecionado['tempo_registro'].dt.floor(intervalo)
+        df_agrupado = df_selecionado.groupby(['regiao', 'tempo_alinhado'])[colunaY].mean().reset_index()
+
+        # Gráfico de Barras
+        cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}
+        fig_barras = px.bar(
+            df_agrupado,
+            x='tempo_alinhado',
+            y=colunaY,
+            color="regiao",
+            title=f"Gráfico de Barras (Médias): {colunaX.capitalize()} vs {colunaY.capitalize()}",
+            color_discrete_map=cores_personalizadas,
+            template="plotly_white"
+        )
+        st.plotly_chart(fig_barras, use_container_width=True)
+
     except Exception as e:
-        st.error(f"Erro ao criar gráfico de barras:  {e}")
-    st.plotly_chart(fig_valores, use_container_width=True)
+        st.error(f"Erro ao criar gráfico de barras: {e}")
     
 def grafico_linhas(df_selecionado):
-    # Seleção da coluna X  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
-   
     with st.expander("Selecione os eixos"):
         colunaX = st.selectbox(
             "Eixo X",
-            options = ["tempo_registro"],
-            index = 0,
-            key='eixox2'
+            options=["tempo_registro"],
+            index=0,
+            key='eixox_linhas'
         )
 
-        # Seleção da coluna Y  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
         colunaY = st.selectbox(
             "Eixo Y",
-            options = ["umidade", "temperatura", "pressao", "co2", "poeira"],
-            index = 1,
-            key='eixoy2'
+            options=["umidade", "temperatura", "pressao", "co2", "poeira"],
+            index=1,
+            key='eixoy_linhas'
         )
     
     if colunaX == colunaY:
         st.warning("Selecione uma opção diferente para os eixos X e Y")
         return
     
-    try: 
+    # Seleção de intervalo de agrupamento
+    with st.expander("Configuração de intervalo"):
+        intervalo = st.selectbox(
+            "Escolha o intervalo para calcular a média",
+            options=["15T", "30T", "1H", "6H", "1D"],
+            index=2,  # Default: 1 hora
+            key="intervalo_medio"
+        )
+
+    try:
+        # Converter a coluna de tempo para datetime
+        df_selecionado['tempo_registro'] = pd.to_datetime(df_selecionado['tempo_registro'])
+        
+        # Agrupar por região e intervalo de tempo, calculando a média
+        df_selecionado['tempo_alinhado'] = df_selecionado['tempo_registro'].dt.floor(intervalo)
+        df_agrupado = df_selecionado.groupby(['regiao', 'tempo_alinhado'])[colunaY].mean().reset_index()
+
+        # Gráfico com Plotly
         cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}          
         fig_valores2 = px.line(
+            df_agrupado,
+            x='tempo_alinhado',
+            y=colunaY,
+            color="regiao",
+            title=f"Gráfico de Linhas (Médias): {colunaX.capitalize()} vs {colunaY.capitalize()}",
+            color_discrete_map=cores_personalizadas,
+            line_shape='linear', 
+            markers=True  # Mostrar marcadores nos pontos
+        )
+        
+        # Configuração do layout do gráfico
+        fig_valores2.update_layout(
+            xaxis_title='Tempo (Intervalos Alinhados)',
+            yaxis_title=f'{colunaY.capitalize()} Média',
+            template='plotly_white'
+        )
+        
+    except Exception as e:
+        st.error(f"Erro ao criar gráfico de linhas: {e}")
+        return
+    
+    # Exibir gráfico no Streamlit
+    st.plotly_chart(fig_valores2, use_container_width=True)
+    
+def grafico_dispersao(df_selecionado):
+    with st.expander("Selecione os eixos"):
+        colunaX = st.selectbox(
+            "Eixo X",
+            options=["tempo_registro", "umidade", "temperatura", "pressao", "altitude", "co2", "poeira"],
+            index=0,
+            key='eixox_dispersao'
+        )
+
+        colunaY = st.selectbox(
+            "Eixo Y",
+            options=["umidade", "temperatura", "pressao", "altitude", "co2", "poeira"],
+            index=1,
+            key='eixoy_dispersao'
+        )
+
+    if colunaX == colunaY:
+        st.warning("Selecione uma opção diferente para os eixos X e Y")
+        return
+
+    try:
+        
+        # Se a coluna X for 'tempo_registro', converta para um valor numérico (exemplo: número de dias)
+        if colunaX == "tempo_registro":
+            df_selecionado[colunaX] = (df_selecionado[colunaX] - df_selecionado[colunaX].min()).dt.total_seconds() / (60 * 60 * 24)  # dias
+        # Se a coluna Y for 'tempo_registro', converta para um valor numérico (exemplo: número de dias)
+        if colunaY == "tempo_registro":
+            df_selecionado[colunaY] = (df_selecionado[colunaY] - df_selecionado[colunaY].min()).dt.total_seconds() / (60 * 60 * 24)  # dias      
+        
+        # Calcula a regressão linear
+        x = df_selecionado[colunaX]
+        y = df_selecionado[colunaY]
+        
+        # Realiza a regressão linear usando scipy
+        slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+        
+        # Calcula a linha de regressão (y = mx + b)
+        linha_regressao = slope * x + intercept
+             
+        cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}
+        fig_dispersao = px.scatter(
             df_selecionado,
             x=colunaX,
             y=colunaY,
             color="regiao",
-            title=f"Gráfico de Linhas: {colunaX.capitalize()} vs {colunaY.capitalize()}",
+            title=f"Gráfico de Dispersão: {colunaX.capitalize()} vs {colunaY.capitalize()}",
             color_discrete_map=cores_personalizadas,
-            line_shape='linear', 
-            markers=True  # Para mostrar marcadores nos pontos
-        )   
-        
-    except Exception as e:
-        st.error(f"Erro ao criar gráfico de barras:  {e}")
-    st.plotly_chart(fig_valores2, use_container_width=True)
-    
-def grafico_dispersao(df_selecionado):
-    # Seleção da coluna X  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
-    with st.expander("Selecione os eixos"):    
-        colunaX = st.selectbox(
-            "Eixo X",
-            options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro"],
-            index = 0,
-            key='eixox3'
+            template="plotly_white"
         )
+        
+        # Adiciona a linha de regressão ao gráfico
+        fig_dispersao.add_trace(
+            go.Scatter(
+                x=x,
+                y=linha_regressao,
+                mode='lines',
+                name=f"Regressão Linear",
+                line=dict(color='red', dash='dash')
+            )
+        )
+        
+        st.plotly_chart(fig_dispersao, use_container_width=True)
 
-        # Seleção da coluna Y  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
-        colunaY = st.selectbox(
-            "Eixo Y",
-            options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro"],
-            index = 1,
-            key='eixoy3'
-        )
-    
-    if colunaX == colunaY:
-        st.warning("Selecione uma opção diferente para os eixos X e Y")
-        return
-    try:
-        cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}
-        fig_valores3 = px.scatter(
-            df_selecionado, 
-            x = colunaX, 
-            y = colunaY,
-            color='regiao',
-            title=f"Gráfico de Dispersão por Região: {colunaX.capitalize()} vs {colunaY.capitalize()}",
-            color_discrete_map = cores_personalizadas                        
-            )  
-        
-        st.plotly_chart(fig_valores3, use_container_width=True)
-            
     except Exception as e:
         st.error(f"Erro ao criar gráfico de dispersão: {e}")
         
 def grafico_area(df_selecionado):
-    # Seleção da coluna X  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
     with st.expander("Selecione os eixos"):
         colunaX = st.selectbox(
             "Eixo X",
-            options = ["tempo_registro"],
-            index = 0,
-            key='eixox4'
+            options=["tempo_registro"],
+            index=0,
+            key='eixox_area'
         )
 
-        # Seleção da coluna Y  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
         colunaY = st.selectbox(
             "Eixo Y",
-            options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira"],
-            index = 1,
-            key='eixoy4'
+            options=["umidade", "temperatura", "pressao", "altitude", "co2", "poeira"],
+            index=1,
+            key='eixoy_area'
         )
-    
+
     if colunaX == colunaY:
         st.warning("Selecione uma opção diferente para os eixos X e Y")
         return
+
+    with st.expander("Configuração de intervalo"):
+        intervalo = st.selectbox(
+            "Escolha o intervalo para calcular a soma",
+            options=["15T", "30T", "1H", "6H", "1D"],
+            index=2,
+            key="intervalo_area"
+        )
+
     try:
-        grupo_dados4 = df_selecionado.groupby(by=[colunaX]).size().reset_index(name=colunaY)
-        st.area_chart(grupo_dados4, x = colunaX, y = colunaY, color= ["#455354"], stack="center" )
+        df_selecionado['tempo_registro'] = pd.to_datetime(df_selecionado['tempo_registro'])
+        df_selecionado['tempo_alinhado'] = df_selecionado['tempo_registro'].dt.floor(intervalo)
+        df_agrupado = df_selecionado.groupby(['tempo_alinhado', 'regiao'])[colunaY].sum().reset_index()
+
+        # Gráfico de Área
+        cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}
+        fig_area = px.area(
+            df_agrupado,
+            x='tempo_alinhado',
+            y=colunaY,
+            color="regiao",
+            title=f"Gráfico de Área (Somas): {colunaX.capitalize()} vs {colunaY.capitalize()}",
+            color_discrete_map=cores_personalizadas,
+            template="plotly_white"
+        )
+        st.plotly_chart(fig_area, use_container_width=True)
 
     except Exception as e:
-        st.error(f"Erro ao criar gráfico de area: {e}")
+        st.error(f"Erro ao criar gráfico de área: {e}")
         
-def grafico_barrasEmpilhadas(df_selecionado):
-    # Seleção da coluna X  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
-    with st.expander("Selecione os eixos"): 
+def grafico_barras_empilhadas(df_selecionado):
+    with st.expander("Selecione os eixos"):
         colunaX = st.selectbox(
             "Eixo X",
-            options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro"],
-            index = 0,
-            key='eixox5'
+            options=["tempo_registro", "umidade", "temperatura", "pressao", "altitude", "co2", "poeira"],
+            index=0,
+            key='eixox_empilhadas'
         )
 
-        # Seleção da coluna Y  |  selectbox ==> Cria uma caixa de seleção na barra lateral. 
         colunaY = st.selectbox(
             "Eixo Y",
-            options = ["umidade", "temperatura", "pressao", "altitude", "co2", "poeira", "tempo_registro"],
-            index = 1,
-            key='eixoy5'
+            options=["umidade", "temperatura", "pressao", "altitude", "co2", "poeira"],
+            index=1,
+            key='eixoy_empilhadas'
         )
-    
+
     if colunaX == colunaY:
         st.warning("Selecione uma opção diferente para os eixos X e Y")
         return
-    try:   
-        cores_personalizadas = {
-            'São Paulo': '#455354',  # Cor para a região Norte
-            'Grande ABC': '#77A074'    # Cor para a região Sul
-        }
-    
-        fig_barra = px.bar(df_selecionado, 
-                            x=colunaX,
-                            y=colunaY,
-                            color='regiao',
-                            barmode='group',
-                            title='Gráfico de Barras Empilhadas por Região',
-                            color_discrete_map= cores_personalizadas
-                            )
-        
-        st.plotly_chart(fig_barra, use_container_width=True)
-    
+
+    with st.expander("Configuração de intervalo"):
+        intervalo = st.selectbox(
+            "Escolha o intervalo para calcular a soma",
+            options=["15T", "30T", "1H", "6H", "1D"],
+            index=2,
+            key="intervalo_empilhadas"
+        )
+
+    try:
+        df_selecionado['tempo_registro'] = pd.to_datetime(df_selecionado['tempo_registro'])
+        df_selecionado['tempo_alinhado'] = df_selecionado['tempo_registro'].dt.floor(intervalo)
+        df_agrupado = df_selecionado.groupby(['tempo_alinhado', 'regiao'])[colunaY].sum().reset_index()
+
+        # Gráfico de Barras Empilhadas
+        cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}
+        fig_empilhadas = px.bar(
+            df_agrupado,
+            x='tempo_alinhado',
+            y=colunaY,
+            color="regiao",
+            barmode='stack',
+            title=f"Gráfico de Barras Empilhadas (Somas): {colunaX.capitalize()} vs {colunaY.capitalize()}",
+            color_discrete_map=cores_personalizadas,
+            template="plotly_white"
+        )
+        st.plotly_chart(fig_empilhadas, use_container_width=True)
+
     except Exception as e:
-        print(f'Erro ao criar o gráfico de barras empilhadas: {e}')
+        st.error(f"Erro ao criar gráfico de barras empilhadas: {e}")
         
         
 # *********************************SLIDERS *****************************
