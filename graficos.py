@@ -31,7 +31,7 @@ def grafico_barras(df_selecionado):
     with st.expander("Configuração de intervalo"):
         intervalo = st.selectbox(
             "Escolha o intervalo para calcular a média",
-            options=["15T", "30T", "1H", "6H", "1D"],
+            options=["15Min", "30Min", "1H", "6H", "1D"],
             index=2,
             key="intervalo_barras"
         )
@@ -52,6 +52,22 @@ def grafico_barras(df_selecionado):
             title=f"Gráfico de Barras (Médias): {colunaX.capitalize()} vs {colunaY.capitalize()}",
             color_discrete_map=cores_personalizadas,
             template="plotly_white"
+        )
+        
+       # Personalização de layout: rótulos, legenda e marcações
+        fig_barras.update_layout(
+            xaxis=dict(
+                title=dict(text="Tempo de Registro", font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo X
+                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo X
+            ),
+            yaxis=dict(
+                title=dict(text=colunaY.capitalize(), font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo Y
+                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo Y
+            ),
+            legend=dict(
+                title=dict(text="Região", font=dict(color="#0D0D0D", size=14)),  # Título da legenda
+                font=dict(color="#0D0D0D", size=12)  # Texto da legenda
+            )
         )
         st.plotly_chart(fig_barras, use_container_width=True)
 
@@ -82,7 +98,7 @@ def grafico_linhas(df_selecionado):
     with st.expander("Configuração de intervalo"):
         intervalo = st.selectbox(
             "Escolha o intervalo para calcular a média",
-            options=["15T", "30T", "1H", "6H", "1D"],
+            options=["15Min", "30Min", "1H", "6H", "1D"],
             index=2,  # Default: 1 hora
             key="intervalo_medio"
         )
@@ -112,6 +128,26 @@ def grafico_linhas(df_selecionado):
         fig_valores2.update_layout(
             xaxis_title='Tempo (Intervalos Alinhados)',
             yaxis_title=f'{colunaY.capitalize()} Média',
+            template='plotly_white'
+        )
+        
+        # Configuração do layout do gráfico
+        fig_valores2.update_layout(
+            xaxis=dict(
+                title=dict(text='Tempo (Intervalos Alinhados)', font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo X
+                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo X
+            ),
+            yaxis=dict(
+                title=dict(text=f'{colunaY.capitalize()} Média', font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo Y
+                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo Y
+            ),
+            legend=dict(
+                title=dict(text="Região", font=dict(color="#0D0D0D", size=14)),  # Título da legenda
+                font=dict(color="#0D0D0D", size=12)  # Texto da legenda
+            ),
+            title=dict(
+                font=dict(color="#0D0D0D", size=16)  # Cor e tamanho do título do gráfico
+            ),
             template='plotly_white'
         )
         
@@ -182,6 +218,24 @@ def grafico_dispersao(df_selecionado):
                 line=dict(color='red', dash='dash')
             )
         )
+         # Configurações do layout do gráfico
+        fig_dispersao.update_layout(
+            xaxis=dict(
+                title=dict(text=colunaX.capitalize(), font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo X
+                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo X
+            ),
+            yaxis=dict(
+                title=dict(text=colunaY.capitalize(), font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo Y
+                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo Y
+            ),
+            legend=dict(
+                title=dict(text="Região", font=dict(color="#0D0D0D", size=14)),  # Título da legenda
+                font=dict(color="#0D0D0D", size=12)  # Texto da legenda
+            ),
+            title=dict(
+                font=dict(color="#0D0D0D", size=16)  # Cor e tamanho do título do gráfico
+            )
+        )
         
         st.plotly_chart(fig_dispersao, use_container_width=True)
 
@@ -211,7 +265,7 @@ def grafico_area(df_selecionado):
     with st.expander("Configuração de intervalo"):
         intervalo = st.selectbox(
             "Escolha o intervalo para calcular a soma",
-            options=["15T", "30T", "1H", "6H", "1D"],
+            options=["15Min", "30Min", "1H", "6H", "1D"],
             index=2,
             key="intervalo_area"
         )
@@ -231,6 +285,25 @@ def grafico_area(df_selecionado):
             title=f"Gráfico de Área (Somas): {colunaX.capitalize()} vs {colunaY.capitalize()}",
             color_discrete_map=cores_personalizadas,
             template="plotly_white"
+        )
+        
+        # Ajustes de layout
+        fig_area.update_layout(
+            xaxis=dict(
+                title=dict(text='Tempo (Intervalos Alinhados)', font=dict(color="#0D0D0D", size=14)),
+                tickfont=dict(color="#0D0D0D", size=12)
+            ),
+            yaxis=dict(
+                title=dict(text=f'{colunaY.capitalize()} (Soma)', font=dict(color="#0D0D0D", size=14)),
+                tickfont=dict(color="#0D0D0D", size=12)
+            ),
+            legend=dict(
+                title=dict(text="Região", font=dict(color="#0D0D0D", size=14)),
+                font=dict(color="#0D0D0D", size=12)
+            ),
+            title=dict(
+                font=dict(color="#0D0D0D", size=16)
+            )
         )
         st.plotly_chart(fig_area, use_container_width=True)
 
@@ -260,7 +333,7 @@ def grafico_barras_empilhadas(df_selecionado):
     with st.expander("Configuração de intervalo"):
         intervalo = st.selectbox(
             "Escolha o intervalo para calcular a soma",
-            options=["15T", "30T", "1H", "6H", "1D"],
+            options=["15Min", "30Min", "1H", "6H", "1D"],
             index=2,
             key="intervalo_empilhadas"
         )
@@ -282,6 +355,26 @@ def grafico_barras_empilhadas(df_selecionado):
             color_discrete_map=cores_personalizadas,
             template="plotly_white"
         )
+    
+    # Ajustes de layout
+        fig_empilhadas.update_layout(
+            xaxis=dict(
+                title=dict(text='Tempo (Intervalos Alinhados)', font=dict(color="#0D0D0D", size=14)),
+                tickfont=dict(color="#0D0D0D", size=12)
+            ),
+            yaxis=dict(
+                title=dict(text=f'{colunaY.capitalize()} (Soma)', font=dict(color="#0D0D0D", size=14)),
+                tickfont=dict(color="#0D0D0D", size=12)
+            ),
+            legend=dict(
+                title=dict(text="Região", font=dict(color="#0D0D0D", size=14)),
+                font=dict(color="#0D0D0D", size=12)
+            ),
+            title=dict(
+                font=dict(color="#0D0D0D", size=16)
+            )
+        )
+
         st.plotly_chart(fig_empilhadas, use_container_width=True)
 
     except Exception as e:

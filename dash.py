@@ -31,7 +31,7 @@ df_selecionado = df.copy()   # Cria uma copia do df original.:
 
 # ****************************** MENU LATERAL ******************************
 
-st.sidebar.image("images/logo.png", use_container_width=True)
+st.sidebar.image("images/logo.png")
 
 st.sidebar.markdown(f'<h1 style="text-transform: uppercase;">{'Selecione a região para gerar o gráfico'}</h1>', unsafe_allow_html=True)  
 
