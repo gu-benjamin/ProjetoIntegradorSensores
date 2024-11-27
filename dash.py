@@ -242,29 +242,6 @@ def graficos(df):
         st.warning("Nenhum dado disponível para os filtros aplicados.")
         return
 
-    # Adiciona o CSS personalizado para centralizar e estilizar os títulos das abas
-    st.markdown(
-        """
-        <style>
-        /* Centralizar e estilizar as abas */
-        div[class*="stTabs"] button {
-            text-align: center;
-            font-size: 50px;
-            font-weight: bold;
-            color: #0D0D0D; /* Cor do texto */
-        }
-        /* Adiciona destaque na aba ativa */
-        div[class*="stTabs"] button[data-baseweb="tab"]:hover {
-            color: #455354;
-        }
-        div[class*="stTabs"] button[data-selected="true"] {
-            border-bottom: 50px solid #0D0D0D; /* Sublinhar aba ativa */
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    
     # Criação das abas para cada gráfico
     aba_barras, aba_linhas, aba_dispersao, aba_area, aba_barras_empilhadas = st.tabs(
         ["Gráfico de Barras", "Gráfico de Linhas", "Gráfico de Dispersão", "Gráfico de Área", "Barras Empilhadas"]
