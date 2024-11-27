@@ -186,6 +186,7 @@ def Home():
     </div>
     """
 
+
     # Exibição das caixas em cada coluna
     with col1:
         st.markdown(
@@ -214,25 +215,86 @@ def Home():
     st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
 
 # **************************** PLOTANDO GRÁFICOS ****************************
-def graficos(df):
+# def graficos(df):
     
+#     # Verifica se há dados no DataFrame
+#     if df.empty:
+#         st.warning("Nenhum dado disponível para os filtros aplicados.")
+#         return
+
+#     # Plotagem dos gráficos
+#     col1, space, col2 = st.columns([10, 5, 10])
+
+#     with col1:
+#         grafico_barras(df)
+#         grafico_linhas(df)
+
+#     with col2:
+#         grafico_dispersao(df)
+#         grafico_area(df)
+
+#     grafico_barras_empilhadas(df)
+
+# **************************** PLOTANDO GRÁFICOS ****************************
+def graficos(df):
     # Verifica se há dados no DataFrame
     if df.empty:
         st.warning("Nenhum dado disponível para os filtros aplicados.")
         return
 
-    # Plotagem dos gráficos
-    col1, space, col2 = st.columns([10, 5, 10])
+    # Adiciona o CSS personalizado para centralizar e estilizar os títulos das abas
+    st.markdown(
+        """
+        <style>
+        /* Centralizar e estilizar as abas */
+        div[class*="stTabs"] button {
+            text-align: center;
+            font-size: 50px;
+            font-weight: bold;
+            color: #0D0D0D; /* Cor do texto */
+        }
+        /* Adiciona destaque na aba ativa */
+        div[class*="stTabs"] button[data-baseweb="tab"]:hover {
+            color: #455354;
+        }
+        div[class*="stTabs"] button[data-selected="true"] {
+            border-bottom: 50px solid #0D0D0D; /* Sublinhar aba ativa */
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Criação das abas para cada gráfico
+    aba_barras, aba_linhas, aba_dispersao, aba_area, aba_barras_empilhadas = st.tabs(
+        ["Gráfico de Barras", "Gráfico de Linhas", "Gráfico de Dispersão", "Gráfico de Área", "Barras Empilhadas"]
+    )
 
-    with col1:
+    # Gráfico de Barras
+    with aba_barras:
+        st.subheader("Gráfico de Barras")
         grafico_barras(df)
+
+    # Gráfico de Linhas
+    with aba_linhas:
+        st.subheader("Gráfico de Linhas")
         grafico_linhas(df)
 
-    with col2:
+    # Gráfico de Dispersão
+    with aba_dispersao:
+        st.subheader("Gráfico de Dispersão")
         grafico_dispersao(df)
+
+    # Gráfico de Área
+    with aba_area:
+        st.subheader("Gráfico de Área")
         grafico_area(df)
 
-    grafico_barras_empilhadas(df)
+    # Gráfico de Barras Empilhadas
+    with aba_barras_empilhadas:
+        st.subheader("Gráfico de Barras Empilhadas")
+        grafico_barras_empilhadas(df)
+
 
 # **************************** CHAMANDO A FUNÇÃO ****************************
 
