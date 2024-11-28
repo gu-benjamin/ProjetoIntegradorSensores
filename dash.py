@@ -105,12 +105,21 @@ def Home():
         padding=40,
         max_width=744
     )
+    
+    button1, button2 = st.columns([30, 200])
 
     # Botão para abrir o modal
-    open_modal = st.button("Análise inteligente", icon='🤖', key="Analise")
+    with button1: open_modal = st.button("Análise inteligente", icon='🤖', key="Analise")
+        
     if open_modal:
         modal.open()
 
+    with button2: download = st.button('Baixar dados ')
+    
+    if download:
+        df_filtrado.to_csv("dadosProjetoIntegrador.csv", index=False)
+        st.success("Arquivo baixado com sucesso!")
+    
     # Configuração do conteúdo do modal
     if modal.is_open():
         with modal.container():

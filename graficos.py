@@ -380,7 +380,9 @@ def grafico_barras_empilhadas(df_selecionado):
     except Exception as e:
         st.error(f"Erro ao criar gráfico de barras empilhadas: {e}")
         
-        
+
+
+
 # *********************************SLIDERS *****************************
 
 # Verificar quais os atributos do filtro. 
