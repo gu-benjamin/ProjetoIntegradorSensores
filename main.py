@@ -36,8 +36,8 @@ def msg_sensor(client, userdata, msg):
             pressao = mqtt_dados.get('pressure')
             altitude = mqtt_dados.get('altitude')
             umidade = mqtt_dados.get('humidity')
-            co2 = mqtt_dados.get('co2')
-            poeira = 0
+            co2 = mqtt_dados.get('co2') #co2
+            poeira = 0 # mqtt_dados.get('poeira1')
             tempo_registro = mqtt_dados.get('timestamp')
             regiao = 'Grande ABC'
             
