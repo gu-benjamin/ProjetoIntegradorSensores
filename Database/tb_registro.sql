@@ -1,8 +1,8 @@
-CREATE DATABASE  IF NOT EXISTS `bd_medicao` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `bd_medicao`;
+CREATE DATABASE  IF NOT EXISTS `bd_medidor` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `bd_medidor`;
 -- MySQL dump 10.13  Distrib 8.0.38, for Win64 (x86_64)
 --
--- Host: localhost    Database: bd_medicao
+-- Host: localhost    Database: bd_medidor
 -- ------------------------------------------------------
 -- Server version	8.0.39
 
