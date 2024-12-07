@@ -37,7 +37,8 @@ st.sidebar.markdown(f'<h1 style="text-transform: uppercase;">{'Selecione a regi�
 
 st.sidebar.subheader("Região")
 SP = st.sidebar.checkbox("São Paulo", value=True)
-ABC = st.sidebar.checkbox("Grade ABC", value=True)
+ABC = st.sidebar.checkbox("ABC", value=True)
+
 
 if SP == False and ABC == False:
     st.sidebar.markdown(f'<p style="font-size:16px;font-weight:bold;background-color:#D3D4CD;display:flex;justify-content:center;padding:10px;border-radius:10px;">{"SELECIONE UMA REGIÃO!"}<p>', unsafe_allow_html=True)
@@ -46,9 +47,9 @@ if SP == False and ABC == False:
 # Lista de regiões selecionadas
 regioes_selecionadas = []
 if SP:
-    regioes_selecionadas.append("São Paulo")
+    regioes_selecionadas.append("Sao Paulo")
 if ABC:
-    regioes_selecionadas.append("Grande ABC")
+    regioes_selecionadas.append("ABC")
 
 # Filtrando o DataFrame com base nas regiões selecionadas
 if regioes_selecionadas:
@@ -222,7 +223,6 @@ def Home():
         )
         
     st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
-
 # **************************** PLOTANDO GRÁFICOS ****************************
 # def graficos(df):
     
@@ -252,9 +252,14 @@ def graficos(df):
         return
 
     # Criação das abas para cada gráfico
-    aba_barras, aba_linhas, aba_dispersao, aba_area, aba_barras_empilhadas = st.tabs(
-        ["Gráfico de Barras", "Gráfico de Linhas", "Gráfico de Dispersão", "Gráfico de Área", "Barras Empilhadas"]
+    aba_mapa, aba_barras, aba_linhas, aba_dispersao, aba_area, aba_barras_empilhadas = st.tabs(
+        ["Mapa","Gráfico de Barras", "Gráfico de Linhas", "Gráfico de Dispersão", "Gráfico de Área", "Barras Empilhadas"]
     )
+
+    # Mapa
+    with aba_mapa:
+        st.subheader("Estações de Monitoramento")
+        st.map(df, size=20, color='#0044ff')
 
     # Gráfico de Barras
     with aba_barras:

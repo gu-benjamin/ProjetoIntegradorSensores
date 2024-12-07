@@ -12,8 +12,6 @@ from datetime import datetime
 from streamlit_modal import Modal
 from graficos import *
 
-
-
 #Conexão com a API Gemini e configuração do modelo
 GOOGLE_API_KEY= ('AIzaSyBuq3bDGCnA95jVmawwQq8fpUGxd4-_66s')
 genai.configure(api_key=GOOGLE_API_KEY)
