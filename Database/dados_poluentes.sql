@@ -8,6 +8,7 @@ CREATE TABLE `dados_poluentes` (
   `so2` float NOT NULL,
   `co` float NOT NULL,
   `latitude` FLOAT NOT NULL,
-  `latitude` FLOAT NOT NULL,
+  `longitude` FLOAT NOT NULL,
+  `regiao` VARCHAR(100) NOT NULL,
   PRIMARY KEY (`id`)
 )

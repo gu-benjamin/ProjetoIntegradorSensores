@@ -7,6 +7,7 @@ from datetime import datetime
 from streamlit_modal import Modal
 import scipy.stats as stats
 import plotly.graph_objects as go
+import pydeck as pdk
 
 def grafico_barras(df_selecionado):
     with st.expander("Selecione os eixos"): 
@@ -380,8 +381,139 @@ def grafico_barras_empilhadas(df_selecionado):
     except Exception as e:
         st.error(f"Erro ao criar gráfico de barras empilhadas: {e}")
         
+def grafico_mapa(df_mapa):
+    # Consultar os valores máximos de poluentes (uma única vez)
+    query_dados_poluentes = """
+    SELECT 
+        MAX(pm25) AS max_pm25,
+        MAX(pm10) AS max_pm10,
+        MAX(o3) AS max_o3,
+        MAX(no2) AS max_no2,
+        MAX(so2) AS max_so2,
+        MAX(co) AS max_co
+    FROM dados_poluentes;
+    """
 
+    query_tb_registro = """
+    SELECT 
+        regiao, 
+        MAX(co2) AS max_co2
+    FROM tb_registro
+    GROUP BY regiao;
+    """
 
+    # Executar consultas uma única vez
+    max_dados_poluentes = conexao(query_dados_poluentes).iloc[0].to_dict()
+    max_tb_registro = conexao(query_tb_registro).iloc[0].to_dict()
+
+    # Combinar os resultados em um dicionário
+    maximos = {
+    'pm25': max_dados_poluentes.get('max_pm25', 0),
+    'pm10': max_dados_poluentes.get('max_pm10', 0),
+    'o3': max_dados_poluentes.get('max_o3', 0),
+    'no2': max_dados_poluentes.get('max_no2', 0),
+    'so2': max_dados_poluentes.get('max_so2', 0),
+    'co': max_dados_poluentes.get('max_co', 0),
+    'co2': max_tb_registro.get('max_co2', 0)
+    }
+
+    # Definir cores baseadas na origem
+    cores = {
+        'tb_registro': [255, 0, 0],        # Vermelho para Sensor do Projeto
+        'dados_poluentes': [0, 0, 255],   # Azul para Estações de Monitoramento
+    }
+
+    # Mapear cores com fallback para cinza
+    df_mapa['cor'] = df_mapa['origem'].map(cores)
+    df_mapa['cor'] = df_mapa['cor'].apply(lambda x: x if isinstance(x, list) else [128, 128, 128])
+
+    # Adicionar tamanho fixo
+    df_mapa['tamanho'] = 500
+
+    # Calcular maior poluente para cada origem
+    def calcular_maior_poluente(origem, regiao):
+        if origem == 'dados_poluentes':
+            poluentes = {key: maximos[key] for key in ['pm25', 'pm10', 'o3', 'no2', 'so2', 'co']}
+        elif origem == 'tb_registro':
+            poluentes = {'co2': maximos['co2']}
+        else:
+            return None, None
+
+        # Encontrar o maior poluente
+        maior_poluente = max(poluentes, key=poluentes.get)
+        maior_valor = round(poluentes[maior_poluente], 4)
+        return maior_poluente, maior_valor
+
+    df_mapa['maior_poluente'], df_mapa['maior_valor'] = zip(
+        *df_mapa.apply(lambda row: calcular_maior_poluente(row['origem'], row['regiao']), axis=1)
+    )
+
+    # Adicionar descrição para o tooltip
+    def formatar_descricao(row):
+        if row['origem'] == 'tb_registro':
+            return (f"Sensor do Projeto: {row['regiao']}\n"
+                    "Poluentes: co2 \n"
+                    f"Maior incidência: {row['maior_poluente']} ({row['maior_valor']:.2f})"
+            )
+
+        elif row['origem'] == 'dados_poluentes':
+            return (
+                f"CETESB - Estação de Monitoramento {row['regiao']}\n"
+                f"Poluentes: pm25, pm10, o3, no2, so2, co \n"
+                f"Maior registro: {row['maior_poluente']} ({row['maior_valor']:.2f})"
+            )
+
+    df_mapa['descricao'] = df_mapa.apply(formatar_descricao, axis=1)
+
+    # Configuração do Pydeck
+    layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=df_mapa,
+        get_position='[longitude, latitude]',
+        get_radius='tamanho',
+        get_fill_color='cor',
+        pickable=True,  # Interatividade ao clicar
+    )
+
+    view_state = pdk.ViewState(
+        latitude=df_mapa['latitude'].mean(),
+        longitude=df_mapa['longitude'].mean(),
+        zoom=10,
+        pitch=40,
+    )
+
+    # Configuração do mapa
+    deck = pdk.Deck(
+        layers=[layer],
+        initial_view_state=view_state,
+        tooltip={"text": "{descricao}"}
+    )
+
+    # Exibe o mapa
+    st.title("Distribuição de Sensores e Estações Ambientais no Estado de São Paulo")
+    st.pydeck_chart(deck)
+
+    # Legenda
+    legend_html = """
+    <div style="
+        position: absolute; 
+        background-color: white; 
+        padding: 15px; 
+        font-size: 16px; 
+        bottom: 20px; 
+        left: 20px; 
+        z-index: 1000; 
+        border: 2px solid black; 
+        border-radius: 8px;
+        font-family: Arial, sans-serif;">
+       <b>Legenda:</b><br>
+       <div style="margin-top: 10px;">
+           <span style="color: rgb(255, 0, 0); font-size: 20px;">&#9679;</span> Sensor do Projeto<br>
+           <span style="color: rgb(0, 0, 255); font-size: 20px;">&#9679;</span> Estações de Monitoramento<br>
+       </div>
+    </div>
+    """
+    st.markdown(legend_html, unsafe_allow_html=True)
 
 # *********************************SLIDERS *****************************
 

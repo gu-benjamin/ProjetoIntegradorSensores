@@ -14,18 +14,38 @@ st.set_page_config(
     layout="wide",  # ou "wide", se preferir layout mais amplo
     initial_sidebar_state='expanded')
 
-# Consultas iniciais nas duas tabelas do banco
+# Consultas no banco
 query = """
     SELECT * 
     FROM tb_registro
     WHERE regiao IS NOT NULL 
 """
-memoria = ("SELECT * FROM tb_memoria")
 
 df = conexao(query)
-df_memoria = conexao(memoria)
 
 df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])
+
+memoria = ("SELECT * FROM tb_memoria")
+
+query_tb_registro_mapa = """
+    SELECT latitude, longitude, regiao, 'tb_registro' AS origem
+    FROM tb_registro
+    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+"""
+
+df_memoria = conexao(memoria)
+
+query_dados_poluentes_mapa = """
+    SELECT latitude, longitude, regiao, 'dados_poluentes' AS origem
+    FROM dados_poluentes
+    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+"""
+
+df_tb_registro_mapa = conexao(query_tb_registro_mapa)
+
+df_dados_poluentes_mapa = conexao(query_dados_poluentes_mapa)
+
+df_mapa = pd.concat([df_tb_registro_mapa, df_dados_poluentes_mapa], ignore_index=True)
 
 df_selecionado = df.copy()   # Cria uma copia do df original.:
 
@@ -223,26 +243,6 @@ def Home():
         )
         
     st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
-# **************************** PLOTANDO GRÁFICOS ****************************
-# def graficos(df):
-    
-#     # Verifica se há dados no DataFrame
-#     if df.empty:
-#         st.warning("Nenhum dado disponível para os filtros aplicados.")
-#         return
-
-#     # Plotagem dos gráficos
-#     col1, space, col2 = st.columns([10, 5, 10])
-
-#     with col1:
-#         grafico_barras(df)
-#         grafico_linhas(df)
-
-#     with col2:
-#         grafico_dispersao(df)
-#         grafico_area(df)
-
-#     grafico_barras_empilhadas(df)
 
 # **************************** PLOTANDO GRÁFICOS ****************************
 def graficos(df):
@@ -258,8 +258,7 @@ def graficos(df):
 
     # Mapa
     with aba_mapa:
-        st.subheader("Estações de Monitoramento")
-        st.map(df, size=20, color='#0044ff')
+        grafico_mapa(df_mapa)
 
     # Gráfico de Barras
     with aba_barras:
@@ -285,7 +284,7 @@ def graficos(df):
     with aba_barras_empilhadas:
         st.subheader("Gráfico de Barras Empilhadas")
         grafico_barras_empilhadas(df)
-
+# **************************** PLOTANDO GRÁFICOS ****************************
 
 # **************************** CHAMANDO A FUNÇÃO ****************************
 

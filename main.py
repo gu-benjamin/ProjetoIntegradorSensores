@@ -218,5 +218,3 @@ if __name__ == '__main__':
         
         start_mqtt()
         app.run(port=5000, host="localhost", debug=True)
-
-
