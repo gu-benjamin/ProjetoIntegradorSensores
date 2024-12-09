@@ -385,13 +385,15 @@ def grafico_mapa(df_mapa):
     # Consultar os valores máximos de poluentes (uma única vez)
     query_dados_poluentes = """
     SELECT 
+        regiao,
         MAX(pm25) AS max_pm25,
         MAX(pm10) AS max_pm10,
         MAX(o3) AS max_o3,
         MAX(no2) AS max_no2,
         MAX(so2) AS max_so2,
         MAX(co) AS max_co
-    FROM dados_poluentes;
+    FROM dados_poluentes
+    GROUP BY regiao;
     """
 
     query_tb_registro = """
@@ -509,7 +511,7 @@ def grafico_mapa(df_mapa):
        <b>Legenda:</b><br>
        <div style="margin-top: 10px;">
            <span style="color: rgb(255, 0, 0); font-size: 20px;">&#9679;</span> Sensor do Projeto<br>
-           <span style="color: rgb(0, 0, 255); font-size: 20px;">&#9679;</span> Estações de Monitoramento<br>
+           <span style="color: rgb(0, 0, 255); font-size: 20px;">&#9679;</span> Estação de Monitoramento<br>
        </div>
     </div>
     """
