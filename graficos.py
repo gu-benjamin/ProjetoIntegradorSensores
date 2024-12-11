@@ -405,19 +405,19 @@ def grafico_mapa(df_mapa):
     """
 
     # Executar consultas uma única vez
-    max_dados_poluentes = conexao(query_dados_poluentes).iloc[0].to_dict()
-    max_tb_registro = conexao(query_tb_registro).iloc[0].to_dict()
+    max_dados_poluentes = conexao(query_dados_poluentes)
+    max_tb_registro = conexao(query_tb_registro)
 
     # Combinar os resultados em um dicionário
-    maximos = {
-    'pm25': max_dados_poluentes.get('max_pm25', 0),
-    'pm10': max_dados_poluentes.get('max_pm10', 0),
-    'o3': max_dados_poluentes.get('max_o3', 0),
-    'no2': max_dados_poluentes.get('max_no2', 0),
-    'so2': max_dados_poluentes.get('max_so2', 0),
-    'co': max_dados_poluentes.get('max_co', 0),
-    'co2': max_tb_registro.get('max_co2', 0)
-    }
+    # maximos = {
+    #     'pm25': max_dados_poluentes.get('max_pm25', 0),
+    #     'pm10': max_dados_poluentes.get('max_pm10', 0),
+    #     'o3': max_dados_poluentes.get('max_o3', 0),
+    #     'no2': max_dados_poluentes.get('max_no2', 0),
+    #     'so2': max_dados_poluentes.get('max_so2', 0),
+    #     'co': max_dados_poluentes.get('max_co', 0),
+    #     'co2': max_tb_registro.get('max_co2', 0)
+    # }
 
     # Definir cores baseadas na origem
     cores = {
@@ -435,9 +435,9 @@ def grafico_mapa(df_mapa):
     # Calcular maior poluente para cada origem
     def calcular_maior_poluente(origem, regiao):
         if origem == 'dados_poluentes':
-            poluentes = {key: maximos[key] for key in ['pm25', 'pm10', 'o3', 'no2', 'so2', 'co']}
+            poluentes = {key: max_dados_poluentes[key] for key in [max_dados_poluentes['max_pm25'], max_dados_poluentes['max_pm10'], max_dados_poluentes['max_o3'], max_dados_poluentes['max_no2'], max_dados_poluentes['max_so2'], ['max_co']]}
         elif origem == 'tb_registro':
-            poluentes = {'co2': maximos['co2']}
+            poluentes = {'co2': max_tb_registro['max_co2']}
         else:
             return None, None
 

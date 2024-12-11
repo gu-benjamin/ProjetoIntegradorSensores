@@ -13,7 +13,7 @@ app = Flask("registro")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False   
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:525748@127.0.0.1/bd_medidor' #senai%40134
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:senai%40134@127.0.0.1/bd_medidor' #senai%40134
 
 mybd = SQLAlchemy(app)    
 
@@ -22,7 +22,7 @@ def conexao(query):
         host ='127.0.0.1',
         port='3306',
         user='root',
-        password='525748', #senai@134
+        password='senai@134', #senai@134
         db='bd_medidor'
               
     )

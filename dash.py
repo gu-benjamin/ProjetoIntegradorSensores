@@ -137,9 +137,23 @@ def Home():
 
     with button2: download = st.button('Baixar dados ')
     
-    if download:
-        df_filtrado.to_csv("dadosProjetoIntegrador.csv", index=False)
-        st.success("Arquivo baixado com sucesso!")
+    with st.expander("Tabela"):
+        mostrarDados = st.multiselect(
+            "Filtro: ",
+            df_selecionado.columns,
+            default=[],
+            key = "showData_home"
+        )
+    
+        if mostrarDados:
+            st.write(df_selecionado[mostrarDados])
+            
+        if download:
+            if df_selecionado[mostrarDados].empty:
+                st.warning('Não há dados para fazer download!')
+            else:
+                df_selecionado[mostrarDados].to_csv("dadosProjetoIntegrador.csv", index=False)
+                st.success("Arquivo baixado com sucesso!")
     
     # Configuração do conteúdo do modal
     if modal.is_open():
