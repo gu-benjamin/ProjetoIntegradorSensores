@@ -342,7 +342,7 @@ def grafico_barras_empilhadas(df_selecionado):
     try:
         df_selecionado['tempo_registro'] = pd.to_datetime(df_selecionado['tempo_registro'])
         df_selecionado['tempo_alinhado'] = df_selecionado['tempo_registro'].dt.floor(intervalo)
-        df_agrupado = df_selecionado.groupby(['tempo_alinhado', 'regiao'])[colunaY].sum().reset_index()
+        df_agrupado = df_selecionado.groupby(['tempo_alinhado', 'regiao'])[colunaY].count().reset_index()
 
         # Gráfico de Barras Empilhadas
         cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}
@@ -488,7 +488,8 @@ def grafico_mapa(df_mapa):
     deck = pdk.Deck(
         layers=[layer],
         initial_view_state=view_state,
-        tooltip={"text": "{descricao}"}
+        tooltip={"text": "{descricao}"},
+        map_style="light"
     )
 
     # Exibe o mapa
@@ -516,6 +517,63 @@ def grafico_mapa(df_mapa):
     </div>
     """
     st.markdown(legend_html, unsafe_allow_html=True)
+    
+
+def grafico_barras_poluentes(df_selecionado):
+    
+    with st.expander("Selecione o eixo y"): 
+        colunaY = st.selectbox(
+            "Eixo Y",
+            options=['pm25','pm10','o3','no2','so2','co'],
+            index=1,
+            key='eixoy_barras_poluentes'
+        )
+
+    with st.expander("Configuração de intervalo"):
+        intervalo = st.selectbox(
+            "Escolha o intervalo para calcular a média",
+            options=["15Min", "30Min", "1H", "6H", "1D"],
+            index=2,
+            key="intervalo_barras_poluentes"
+        )
+
+    try:
+        # Agrupar e calcular a média por intervalo
+        df_selecionado['data'] = pd.to_datetime(df_selecionado['data'])
+        df_selecionado['tempo_alinhado'] = df_selecionado['data'].dt.floor(intervalo)
+        df_agrupado = df_selecionado.groupby(['regiao', 'data'])[['pm25','pm10','o3','no2','so2','co']].mean().reset_index()
+
+        # Gráfico de Barras
+        cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}
+        fig_barras = px.bar(
+            df_agrupado,
+            x='data',
+            y=colunaY,
+            color="regiao",
+            title=f"Gráfico de Barras (Médias): {'data'} vs {colunaY.capitalize()}",
+            color_discrete_map=cores_personalizadas,
+            template="plotly_white"
+        )
+        
+       # Personalização de layout: rótulos, legenda e marcações
+        fig_barras.update_layout(
+            xaxis=dict(
+                title=dict(text="Tempo de Registro", font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo X
+                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo X
+            ),
+            yaxis=dict(
+                title=dict(text=colunaY.capitalize(), font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo Y
+                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo Y
+            ),
+            legend=dict(
+                title=dict(text="Região", font=dict(color="#0D0D0D", size=14)),  # Título da legenda
+                font=dict(color="#0D0D0D", size=12)  # Texto da legenda
+            )
+        )
+        st.plotly_chart(fig_barras, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Erro ao criar gráfico de barras: {e}")
 
 # *********************************SLIDERS *****************************
 

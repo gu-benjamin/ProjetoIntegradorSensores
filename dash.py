@@ -21,7 +21,15 @@ query = """
     WHERE regiao IS NOT NULL 
 """
 
+query_p = """
+    SELECT * 
+    FROM dados_poluentes
+    WHERE regiao IS NOT NULL 
+"""
+
 df = conexao(query)
+
+df_poluentes = conexao(query_p)
 
 df['tempo_registro'] = pd.to_datetime(df['tempo_registro'])
 
@@ -49,6 +57,8 @@ df_mapa = pd.concat([df_tb_registro_mapa, df_dados_poluentes_mapa], ignore_index
 
 df_selecionado = df.copy()   # Cria uma copia do df original.:
 
+df_selecionado_poluentes = df_poluentes.copy()
+
 # ****************************** MENU LATERAL ******************************
 
 st.sidebar.image("images/logo.png")
@@ -56,20 +66,23 @@ st.sidebar.image("images/logo.png")
 st.sidebar.markdown(f'<h1 style="text-transform: uppercase;">{'Selecione a região para gerar o gráfico'}</h1>', unsafe_allow_html=True)  
 
 st.sidebar.subheader("Região")
-SP = st.sidebar.checkbox("São Paulo", value=True)
+SP = st.sidebar.checkbox("Centro São Paulo", value=True)
 ABC = st.sidebar.checkbox("ABC", value=True)
+LESTE = st.sidebar.checkbox("Zona Leste", value=True)
 
 
-if SP == False and ABC == False:
+if SP == False and ABC == False and LESTE == False:
     st.sidebar.markdown(f'<p style="font-size:16px;font-weight:bold;background-color:#D3D4CD;display:flex;justify-content:center;padding:10px;border-radius:10px;">{"SELECIONE UMA REGIÃO!"}<p>', unsafe_allow_html=True)
     #st.sidebar.warning("Selecione uma região!")
 
 # Lista de regiões selecionadas
 regioes_selecionadas = []
 if SP:
-    regioes_selecionadas.append("Sao Paulo")
+    regioes_selecionadas.append("Centro")
 if ABC:
     regioes_selecionadas.append("ABC")
+if LESTE:
+    regioes_selecionadas.append("Zona Leste")
 
 # Filtrando o DataFrame com base nas regiões selecionadas
 if regioes_selecionadas:
@@ -266,8 +279,8 @@ def graficos(df):
         return
 
     # Criação das abas para cada gráfico
-    aba_mapa, aba_barras, aba_linhas, aba_dispersao, aba_area, aba_barras_empilhadas = st.tabs(
-        ["Mapa","Gráfico de Barras", "Gráfico de Linhas", "Gráfico de Dispersão", "Gráfico de Área", "Barras Empilhadas"]
+    aba_mapa, aba_barras, aba_linhas, aba_dispersao, aba_area, aba_barras_empilhadas, aba_poluentes = st.tabs(
+        ["Mapa","Gráfico de Barras", "Gráfico de Linhas", "Gráfico de Dispersão", "Gráfico de Área", "Barras Empilhadas", "Gráfico de poluentes"]
     )
 
     # Mapa
@@ -298,6 +311,11 @@ def graficos(df):
     with aba_barras_empilhadas:
         st.subheader("Gráfico de Barras Empilhadas")
         grafico_barras_empilhadas(df)
+        
+    # Gráfico de Barras Empilhadas
+    with aba_poluentes:
+        st.subheader("Gráfico de Poluentes")
+        grafico_barras_poluentes(df_selecionado_poluentes)
 # **************************** PLOTANDO GRÁFICOS ****************************
 
 # **************************** CHAMANDO A FUNÇÃO ****************************
