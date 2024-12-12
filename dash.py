@@ -16,15 +16,46 @@ st.set_page_config(
 
 # Consultas no banco
 query = """
-    SELECT * 
+WITH cte_tb_registro AS (
+    SELECT 
+        id,
+        temperatura,
+        pressao,
+        altitude,
+        umidade,
+        co2,
+        tempo_registro,
+        regiao,
+        latitude,
+        longitude,
+        ROW_NUMBER() OVER (PARTITION BY regiao ORDER BY tempo_registro DESC) AS row_num
     FROM tb_registro
-    WHERE regiao IS NOT NULL 
+    WHERE tempo_registro BETWEEN '2024-11-01 00:00:00' AND '2024-12-05 23:59:59'
+)
+SELECT *
+FROM cte_tb_registro;
 """
 
 query_p = """
-    SELECT * 
+WITH cte_dados_poluentes AS (
+    SELECT 
+        id,
+        data,
+        pm25,
+        pm10,
+        o3,
+        no2,
+        so2,
+        co,
+        latitude,
+        longitude,
+        regiao,
+        ROW_NUMBER() OVER (PARTITION BY regiao ORDER BY data DESC) AS row_num
     FROM dados_poluentes
-    WHERE regiao IS NOT NULL 
+    WHERE data BETWEEN '2024-11-01 00:00:00' AND '2024-12-05 23:59:59'
+)
+SELECT *
+FROM cte_dados_poluentes;
 """
 
 df = conexao(query)
@@ -180,8 +211,25 @@ def Home():
                     try:
                         
                         prompt = user_input
+
+                        query_gemini = """
+                        WITH regiao AS (
+                            SELECT 
+                                *, 
+                                ROW_NUMBER() OVER (PARTITION BY regiao ORDER BY id) AS row_num
+                            FROM 
+                                tb_registro
+                            WHERE 
+                                regiao IN ('ABC', 'Zona Leste', 'Centro')
+                        )
+                        SELECT *
+                        FROM regiao
+                        WHERE row_num <= 500;
+                        """
                         
-                        resposta_gemini = gerar_resposta_gemini(df, df_memoria, prompt)
+                        df_gemini = conexao(query_gemini)
+
+                        resposta_gemini = gerar_resposta_gemini(df_gemini, df_memoria, df_poluentes, prompt)
                         
                         st.write("Resposta da análise:")
                         st.write(resposta_gemini) 
@@ -279,8 +327,8 @@ def graficos(df):
         return
 
     # Criação das abas para cada gráfico
-    aba_mapa, aba_barras, aba_linhas, aba_dispersao, aba_area, aba_barras_empilhadas, aba_poluentes = st.tabs(
-        ["Mapa","Gráfico de Barras", "Gráfico de Linhas", "Gráfico de Dispersão", "Gráfico de Área", "Barras Empilhadas", "Gráfico de poluentes"]
+    aba_mapa, aba_barras, aba_linhas, aba_dispersao, aba_barras_empilhadas, aba_poluentes = st.tabs(
+        ["Mapa","Gráfico de Barras", "Gráfico de Linhas", "Gráfico de Dispersão", "Barras Empilhadas", "Gráfico de poluentes"]
     )
 
     # Mapa
@@ -302,10 +350,10 @@ def graficos(df):
         st.subheader("Gráfico de Dispersão")
         grafico_dispersao(df)
 
-    # Gráfico de Área
-    with aba_area:
-        st.subheader("Gráfico de Área")
-        grafico_area(df)
+    # # Gráfico de Área
+    # with aba_area:
+    #     st.subheader("Gráfico de Área")
+    #     grafico_area(df)
 
     # Gráfico de Barras Empilhadas
     with aba_barras_empilhadas:
@@ -315,7 +363,8 @@ def graficos(df):
     # Gráfico de Barras Empilhadas
     with aba_poluentes:
         st.subheader("Gráfico de Poluentes")
-        grafico_barras_poluentes(df_selecionado_poluentes)
+        grafico_barras_poluentes(df, df_selecionado_poluentes)
+        grafico_linhas_poluentes(df, df_selecionado_poluentes)
 # **************************** PLOTANDO GRÁFICOS ****************************
 
 # **************************** CHAMANDO A FUNÇÃO ****************************

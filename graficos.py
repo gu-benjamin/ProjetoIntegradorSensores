@@ -519,61 +519,136 @@ def grafico_mapa(df_mapa):
     st.markdown(legend_html, unsafe_allow_html=True)
     
 
-def grafico_barras_poluentes(df_selecionado):
-    
-    with st.expander("Selecione o eixo y"): 
-        colunaY = st.selectbox(
-            "Eixo Y",
-            options=['pm25','pm10','o3','no2','so2','co'],
-            index=1,
-            key='eixoy_barras_poluentes'
+def grafico_barras_poluentes(df_registro, df_poluentes):
+    with st.expander("Selecione os poluentes para o eixo Y"):
+        colunaY = st.multiselect(
+            "Selecione os poluentes",
+            options=['pm25', 'pm10', 'o3', 'no2', 'so2', 'co', 'co2'],  # Inclui co2 da tabela tb_registro
+            default=['pm25', 'pm10'],
+            key='eixoy_barras_empilhadas'
         )
 
     with st.expander("Configuração de intervalo"):
         intervalo = st.selectbox(
             "Escolha o intervalo para calcular a média",
             options=["15Min", "30Min", "1H", "6H", "1D"],
-            index=2,
+            index=4,
             key="intervalo_barras_poluentes"
         )
 
     try:
-        # Agrupar e calcular a média por intervalo
-        df_selecionado['data'] = pd.to_datetime(df_selecionado['data'])
-        df_selecionado['tempo_alinhado'] = df_selecionado['data'].dt.floor(intervalo)
-        df_agrupado = df_selecionado.groupby(['regiao', 'data'])[['pm25','pm10','o3','no2','so2','co']].mean().reset_index()
+        # Processar df_registro
+        df_registro['data'] = pd.to_datetime(df_registro['tempo_registro'])
+        df_registro = df_registro.rename(columns={'co2': 'co2'})  # Garantir consistência
+        df_registro = df_registro[['data', 'co2', 'regiao']]
 
-        # Gráfico de Barras
-        cores_personalizadas = {'São Paulo': '#455354', 'Grande ABC': '#77A074'}
-        fig_barras = px.bar(
+        # Processar df_poluentes
+        df_poluentes['data'] = pd.to_datetime(df_poluentes['data'])
+        df_poluentes = df_poluentes[['data', 'pm25', 'pm10', 'o3', 'no2', 'so2', 'co', 'regiao']]
+
+        # Combinar os DataFrames
+        df_combined = pd.concat([df_poluentes, df_registro], axis=0, ignore_index=True)
+
+        # Agrupar e calcular a média por intervalo
+        df_combined['tempo_alinhado'] = df_combined['data'].dt.floor(intervalo)
+        df_agrupado = df_combined.groupby(['regiao', 'tempo_alinhado'])[colunaY].mean().reset_index()
+
+        # Gráfico de Barras Empilhadas
+        fig = px.bar(
             df_agrupado,
-            x='data',
+            x='tempo_alinhado',
             y=colunaY,
             color="regiao",
-            title=f"Gráfico de Barras (Médias): {'data'} vs {colunaY.capitalize()}",
-            color_discrete_map=cores_personalizadas,
+            title=f"Gráfico de Barras Empilhadas: Poluentes ao Longo do Tempo",
             template="plotly_white"
         )
-        
-       # Personalização de layout: rótulos, legenda e marcações
-        fig_barras.update_layout(
+
+        # Personalização de layout
+        fig.update_layout(
+            barmode='stack',
+            xaxis_title="Tempo de Registro",
+            yaxis_title="Concentração Média",
+            legend_title="Região",
             xaxis=dict(
-                title=dict(text="Tempo de Registro", font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo X
-                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo X
+                tickfont=dict(size=12),
+                title_font=dict(size=14)
             ),
             yaxis=dict(
-                title=dict(text=colunaY.capitalize(), font=dict(color="#0D0D0D", size=14)),  # Rótulo eixo Y
-                tickfont=dict(color="#0D0D0D", size=12)  # Cor e tamanho dos valores eixo Y
-            ),
-            legend=dict(
-                title=dict(text="Região", font=dict(color="#0D0D0D", size=14)),  # Título da legenda
-                font=dict(color="#0D0D0D", size=12)  # Texto da legenda
+                tickfont=dict(size=12),
+                title_font=dict(size=14)
             )
         )
-        st.plotly_chart(fig_barras, use_container_width=True)
+
+        st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:
-        st.error(f"Erro ao criar gráfico de barras: {e}")
+        st.error(f"Erro ao criar gráfico de barras empilhadas: {e}")
+
+def grafico_linhas_poluentes(df_registro, df_poluentes):
+    with st.expander("Selecione os poluentes para o eixo Y"):
+        colunaY = st.multiselect(
+            "Selecione os poluentes",
+            options=['pm25', 'pm10', 'o3', 'no2', 'so2', 'co', 'co2'],  # Inclui co2 da tabela tb_registro
+            default=['pm25', 'pm10'],
+            key='eixoy_linhas_poluentes'
+        )
+
+    with st.expander("Configuração de intervalo"):
+        intervalo = st.selectbox(
+            "Escolha o intervalo para calcular a média",
+            options=["15Min", "30Min", "1H", "6H", "1D"],
+            index=4,
+            key="intervalo_linhas_poluentes"
+        )
+
+    try:
+        # Processar df_registro
+        df_registro['data'] = pd.to_datetime(df_registro['tempo_registro'])
+        df_registro = df_registro.rename(columns={'co2': 'co2'})  # Garantir consistência
+        df_registro = df_registro[['data', 'co2', 'regiao']]
+
+        # Processar df_poluentes
+        df_poluentes['data'] = pd.to_datetime(df_poluentes['data'])
+        df_poluentes = df_poluentes[['data', 'pm25', 'pm10', 'o3', 'no2', 'so2', 'co', 'regiao']]
+
+        # Combinar os DataFrames
+        df_combined = pd.concat([df_poluentes, df_registro], axis=0, ignore_index=True)
+
+        # Agrupar e calcular a média por intervalo
+        df_combined['tempo_alinhado'] = df_combined['data'].dt.floor(intervalo)
+        df_agrupado = df_combined.groupby(['regiao', 'tempo_alinhado'])[colunaY].mean().reset_index()
+
+        # Gráfico de Linhas
+        fig = px.line(
+            df_agrupado,
+            x='tempo_alinhado',
+            y=colunaY,
+            color="regiao",
+            title=f"Gráfico de Linhas: Poluentes ao Longo do Tempo",
+            markers=True,
+            template="plotly_white"
+        )
+
+        # Personalização de layout
+        fig.update_layout(
+            xaxis_title="Tempo de Registro",
+            yaxis_title="Concentração Média",
+            legend_title="Região",
+            xaxis=dict(
+                tickfont=dict(size=12),
+                title_font=dict(size=14)
+            ),
+            yaxis=dict(
+                tickfont=dict(size=12),
+                title_font=dict(size=14)
+            )
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Erro ao criar gráfico de linhas: {e}")
+
 
 # *********************************SLIDERS *****************************
 
